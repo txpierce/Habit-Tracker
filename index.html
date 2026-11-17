@@ -241,12 +241,14 @@
                 if (trackerData.habits.length === 0) {
                     habitsHTML = `<div class="text-xs text-slate-500 italic py-2">No habits. Click '+ Add Habit' above!</div>`;
                 } else {
-                    habitsHTML = trackerData.habits.map(h => `
+                    habitsHTML = trackerData.habits.map(h => {
+                        const habitName = h['Habit Name'] || h.name;
+                        return `
                         <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2">
-                            <div class="text-xs text-slate-200 font-medium truncate max-w-[120px]">${h['Habit Name'] || h.name}</div>
-                            <input type="checkbox" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
+                            <div class="text-xs text-slate-200 font-medium truncate max-w-[120px]">${habitName}</div>
+                            <input type="checkbox" onchange="toggleDailyHabit('${habitName}', this.checked)" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
                         </div>
-                    `).join('');
+                    `}).join('');
                 }
 
                 col.innerHTML = `
@@ -264,6 +266,24 @@
                 `;
                 container.appendChild(col);
             });
+        }
+
+        async function toggleDailyHabit(habitName, isChecked) {
+            const todayDate = document.getElementById('current-week-label').textContent;
+            
+            try {
+                const url = `${WEB_APP_URL}?action=logHabit&name=${encodeURIComponent(habitName)}&date=${encodeURIComponent(todayDate)}&completed=${isChecked}`;
+                const res = await fetch(url);
+                const json = await res.json();
+                
+                if (json.status === "success") {
+                    console.log(`Successfully logged '${habitName}' (${isChecked}) to Daily_Logs!`);
+                } else {
+                    console.error("Failed to log habit:", json.message);
+                }
+            } catch (err) {
+                console.error("Network error logging habit to Google Sheets:", err);
+            }
         }
 
         function renderCharts() {
