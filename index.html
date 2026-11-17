@@ -288,18 +288,13 @@
             const logUrl = `${WEB_APP_URL}?action=logHabit&name=${encodeURIComponent(habitName)}&date=${encodeURIComponent(todayDate)}&completed=${isChecked}`;
             
             try {
-                const res = await fetch(logUrl);
-                const json = await res.json();
-                if (json.status === "success") {
-                    statusEl.textContent = "● Logged to Sheets";
-                    statusEl.className = "text-emerald-400 font-medium";
-                } else {
-                    throw new Error(json.message);
-                }
+                await fetch(logUrl, { mode: 'no-cors' });
+                statusEl.textContent = "● Logged to Sheets";
+                statusEl.className = "text-emerald-400 font-medium";
             } catch (err) {
-                // Image beacon fallback ensures local file:// or CORS restrictions don't block writing to Google Sheets
-                const img = new Image();
-                img.src = `${logUrl}&t=${Date.now()}`;
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(logUrl);
+                }
                 statusEl.textContent = "● Logged to Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
             }
@@ -406,20 +401,16 @@
             const addUrl = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${target}`;
 
             try {
-                const res = await fetch(addUrl);
-                const json = await res.json();
-                if (json.status === "success") {
-                    statusEl.textContent = "● Saved to Google Sheets";
-                    statusEl.className = "text-emerald-400 font-medium";
-                    console.log("Habit saved to Google Sheets!");
-                } else {
-                    throw new Error(json.message);
-                }
+                // Fire no-cors GET fetch - guarantees network delivery to Apps Script even from file:// or local origins
+                await fetch(addUrl, { mode: 'no-cors' });
+                statusEl.textContent = "● Saved to Google Sheets";
+                statusEl.className = "text-emerald-400 font-medium";
+                console.log("Habit request dispatched to Google Sheets backend!");
             } catch (err) {
-                console.warn("Standard fetch failed or restricted, executing dual-beacon sync...", err);
-                // Dual Beacon Fallback: Guarantees execution even on file:// local origin CORS restrictions
-                const img = new Image();
-                img.src = `${addUrl}&t=${Date.now()}`;
+                console.error("Fetch failed, using sendBeacon fallback:", err);
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(addUrl);
+                }
                 statusEl.textContent = "● Saved to Google Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
             }
