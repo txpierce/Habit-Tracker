@@ -49,7 +49,7 @@
             </button>
             <div class="glass-card px-4 py-2.5 rounded-xl flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10">
                 <div class="text-xs text-slate-300 font-medium">Week Start Date</div>
-                <div class="text-sm font-bold text-emerald-400" id="current-week-label">11.17.2026</div>
+                <div class="text-sm font-bold text-emerald-400" id="current-week-label">--.--.----</div>
             </div>
             <button onclick="loadGoogleSheetData()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-900/40 flex items-center gap-2 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -69,9 +69,9 @@
                 <div class="relative w-20 h-20 flex items-center justify-center">
                     <svg class="w-20 h-20 transform -rotate-90">
                         <circle cx="40" cy="40" r="32" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="none"></circle>
-                        <circle cx="40" cy="40" r="32" stroke="#10b981" stroke-width="6" stroke-dasharray="201" stroke-dashoffset="52" stroke-linecap="round" fill="none"></circle>
+                        <circle cx="40" cy="40" r="32" stroke="#10b981" stroke-width="6" stroke-dasharray="201" stroke-dashoffset="201" stroke-linecap="round" fill="none" id="overall-ring"></circle>
                     </svg>
-                    <span class="absolute text-sm font-bold text-white">0%</span>
+                    <span class="absolute text-sm font-bold text-white" id="overall-pct">0%</span>
                 </div>
                 <div>
                     <div class="text-2xl font-bold text-white mb-1" id="overall-counts">0 Habits / 0 Tasks</div>
@@ -151,6 +151,7 @@
         let trackerData = {
             habits: [],
             tasks: [],
+            logs: [],
             days: [
                 { name: "Sunday", color: "#8b5cf6", completion: 0 },
                 { name: "Monday", color: "#3b82f6", completion: 0 },
@@ -181,6 +182,7 @@
                 if (result.status === "success") {
                     trackerData.habits = result.habits || [];
                     trackerData.tasks = result.tasks || [];
+                    trackerData.logs = result.logs || [];
                     statusEl.textContent = "● Live Connected";
                     statusEl.className = "text-emerald-400 font-medium";
                 }
@@ -233,6 +235,8 @@
             const container = document.getElementById('daily-task-columns');
             container.innerHTML = '';
 
+            const todayDate = document.getElementById('current-week-label').textContent;
+
             trackerData.days.forEach(day => {
                 let col = document.createElement('div');
                 col.className = "glass-card p-4 rounded-2xl flex flex-col justify-between border border-slate-800 min-h-[220px]";
@@ -243,10 +247,16 @@
                 } else {
                     habitsHTML = trackerData.habits.map(h => {
                         const habitName = h['Habit Name'] || h.name;
+                        // Check if logged as completed in logs
+                        const isChecked = trackerData.logs.some(l => 
+                            (l['Habit Name'] === habitName || l['Habit ID'] === habitName) && 
+                            (l['Completed'] === true || l['Completed'] === 'TRUE' || l['Completed'] === 'true')
+                        );
+
                         return `
                         <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2">
                             <div class="text-xs text-slate-200 font-medium truncate max-w-[120px]">${habitName}</div>
-                            <input type="checkbox" onchange="toggleDailyHabit('${habitName}', this.checked)" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDailyHabit('${habitName}', this.checked)" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
                         </div>
                     `}).join('');
                 }
@@ -353,20 +363,35 @@
 
             closeAddHabitModal();
 
-            // Send via GET request to Apps Script to instantly write to Google Sheets
+            // Support both GET and POST fallback for habit creation
             try {
                 const url = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${target}`;
                 const res = await fetch(url);
                 const json = await res.json();
                 if (json.status === "success") {
                     alert("Habit successfully saved to Google Sheets!");
-                    loadGoogleSheetData(); // Reload data from sheet
+                    loadGoogleSheetData();
                 } else {
                     alert("Error saving: " + json.message);
                 }
             } catch (err) {
-                console.error("Failed to save habit:", err);
-                alert("Network error saving habit.");
+                console.error("Failed to save habit via GET, attempting POST fallback:", err);
+                try {
+                    await fetch(WEB_APP_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({
+                            sheet: "Habits",
+                            action: "addRow",
+                            values: [habitId, name, category, parseInt(target), false]
+                        })
+                    });
+                    alert("Habit saved to Google Sheets!");
+                    loadGoogleSheetData();
+                } catch (postErr) {
+                    console.error("POST fallback failed:", postErr);
+                    alert("Network error saving habit.");
+                }
             }
         }
 
