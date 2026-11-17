@@ -60,7 +60,6 @@
 
     <!-- Top Analytics & Progress Bar Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <!-- Overall Progress Bar & Count -->
         <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-base font-semibold text-white">Overall Progress</h3>
@@ -72,7 +71,7 @@
                         <circle cx="40" cy="40" r="32" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="none"></circle>
                         <circle cx="40" cy="40" r="32" stroke="#10b981" stroke-width="6" stroke-dasharray="201" stroke-dashoffset="52" stroke-linecap="round" fill="none"></circle>
                     </svg>
-                    <span class="absolute text-sm font-bold text-white">74%</span>
+                    <span class="absolute text-sm font-bold text-white" id="overall-pct">0%</span>
                 </div>
                 <div>
                     <div class="text-2xl font-bold text-white mb-1" id="overall-counts">0 Habits / 0 Tasks</div>
@@ -81,7 +80,6 @@
             </div>
         </div>
 
-        <!-- Overall Progress Bar Chart -->
         <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
             <div class="flex justify-between items-center mb-2">
                 <h3 class="text-base font-semibold text-white">Daily Completion Trend</h3>
@@ -92,7 +90,6 @@
             </div>
         </div>
 
-        <!-- Mindset & Energy Tracker Chart -->
         <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
             <div class="flex justify-between items-center mb-2">
                 <h3 class="text-base font-semibold text-white">Mindset & Energy</h3>
@@ -111,15 +108,11 @@
     <!-- Daily Circular Progress Dashboard -->
     <div class="glass-card p-6 rounded-2xl mb-8">
         <h3 class="text-lg font-semibold text-white mb-6">Daily Breakdown & Completion Rings</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4" id="daily-rings-container">
-            <!-- Populated via JS -->
-        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4" id="daily-rings-container"></div>
     </div>
 
-    <!-- Daily Task & Habits Columns (Sunday through Saturday) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-8" id="daily-task-columns">
-        <!-- Populated via JS -->
-    </div>
+    <!-- Daily Task & Habits Columns -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-8" id="daily-task-columns"></div>
 
     <!-- Add Habit Modal Form -->
     <div id="habit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
@@ -146,13 +139,11 @@
         </div>
     </div>
 
-    <!-- Footer Status -->
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
         <span>Quiet Progress Habit & Task Tracker v2.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
-    <!-- JavaScript Application Logic -->
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1wgglqfaSIA22A2MQZFgbz3HUDQi-AiqYBszfrcCFlUMYzaowWTZaYWP6wysIOy8/exec";
 
@@ -160,17 +151,16 @@
             habits: [],
             tasks: [],
             days: [
-                { name: "Sunday", color: "#8b5cf6", completion: 100 },
-                { name: "Monday", color: "#3b82f6", completion: 86 },
-                { name: "Tuesday", color: "#06b6d4", completion: 50 },
-                { name: "Wednesday", color: "#10b981", completion: 83 },
-                { name: "Thursday", color: "#84cc16", completion: 50 },
-                { name: "Friday", color: "#f59e0b", completion: 67 },
-                { name: "Saturday", color: "#ec4899", completion: 83 }
+                { name: "Sunday", color: "#8b5cf6", completion: 0 },
+                { name: "Monday", color: "#3b82f6", completion: 0 },
+                { name: "Tuesday", color: "#06b6d4", completion: 0 },
+                { name: "Wednesday", color: "#10b981", completion: 0 },
+                { name: "Thursday", color: "#84cc16", completion: 0 },
+                { name: "Friday", color: "#f59e0b", completion: 0 },
+                { name: "Saturday", color: "#ec4899", completion: 0 }
             ]
         };
 
-        // Set current date dynamically
         function initDates() {
             const today = new Date();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -194,8 +184,8 @@
                     statusEl.className = "text-emerald-400 font-medium";
                 }
             } catch (err) {
-                console.warn("Using offline fallback data:", err);
-                statusEl.textContent = "● Offline Mode (Cached)";
+                console.warn("Using offline fallback:", err);
+                statusEl.textContent = "● Offline Mode";
                 statusEl.className = "text-cyan-400 font-medium";
             }
 
@@ -282,7 +272,7 @@
                 data: {
                     labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                     datasets: [{
-                        data: [6, 7, 5, 6, 5, 6, 7],
+                        data: [0, 0, 0, 0, 0, 0, 0],
                         backgroundColor: '#10b981',
                         borderRadius: 6
                     }]
@@ -304,9 +294,9 @@
                 data: {
                     labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                     datasets: [
-                        { label: 'Energy', data: [8, 7, 9, 6, 8, 9, 10], borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Focus', data: [7, 8, 6, 9, 7, 8, 9], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Motivation', data: [9, 8, 8, 7, 9, 10, 9], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                        { label: 'Energy', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                        { label: 'Focus', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                        { label: 'Motivation', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
                     ]
                 },
                 options: {
@@ -352,22 +342,23 @@
             closeAddHabitModal();
             renderUI();
 
+            // Send via text/plain to avoid CORS preflight failures in Google Apps Script
             try {
                 await fetch(WEB_APP_URL, {
                     method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({
                         sheet: "Habits",
                         action: "addRow",
                         values: newHabitRow
                     })
                 });
-                console.log("Habit synced to Google Sheets!");
+                console.log("Habit successfully saved and synced to Google Sheets!");
             } catch (err) {
                 console.error("Failed to sync habit:", err);
             }
         }
 
-        // Initialize on page load
         initDates();
         loadGoogleSheetData();
     </script>
