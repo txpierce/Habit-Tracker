@@ -140,7 +140,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v2.0</span>
+        <span>Quiet Progress Habit & Task Tracker v3.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -180,7 +180,9 @@
                 const response = await fetch(`${WEB_APP_URL}?action=getData`);
                 const result = await response.json();
                 if (result.status === "success") {
-                    trackerData.habits = result.habits || [];
+                    if (result.habits && result.habits.length > 0) {
+                        trackerData.habits = result.habits;
+                    }
                     trackerData.tasks = result.tasks || [];
                     trackerData.logs = result.logs || [];
                     statusEl.textContent = "● Live Connected";
@@ -235,8 +237,6 @@
             const container = document.getElementById('daily-task-columns');
             container.innerHTML = '';
 
-            const todayDate = document.getElementById('current-week-label').textContent;
-
             trackerData.days.forEach(day => {
                 let col = document.createElement('div');
                 col.className = "glass-card p-4 rounded-2xl flex flex-col justify-between border border-slate-800 min-h-[220px]";
@@ -246,7 +246,8 @@
                     habitsHTML = `<div class="text-xs text-slate-500 italic py-2">No habits. Click '+ Add Habit' above!</div>`;
                 } else {
                     habitsHTML = trackerData.habits.map(h => {
-                        const habitName = h['Habit Name'] || h.name;
+                        const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || h['id'] || "Untitled Habit";
+                        
                         // Check if logged as completed in logs
                         const isChecked = trackerData.logs.some(l => 
                             (l['Habit Name'] === habitName || l['Habit ID'] === habitName) && 
@@ -353,45 +354,54 @@
         }
 
         async function saveNewHabit() {
-            const name = document.getElementById('new-habit-name').value;
-            const category = document.getElementById('new-habit-category').value || "General";
-            const target = document.getElementById('new-habit-target').value || 5;
+            const nameEl = document.getElementById('new-habit-name');
+            const categoryEl = document.getElementById('new-habit-category');
+            const targetEl = document.getElementById('new-habit-target');
 
-            if (!name) return;
+            const name = nameEl.value.trim();
+            const category = categoryEl.value.trim() || "General";
+            const target = targetEl.value || 5;
+
+            if (!name) {
+                alert("Please enter a habit name.");
+                return;
+            }
 
             const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
 
+            // 1. Instant local state update (UI updates immediately on screen!)
+            trackerData.habits.push({
+                'ID': habitId,
+                'Habit Name': name,
+                'name': name,
+                'Category': category,
+                'category': category,
+                'Target': target,
+                'target': target,
+                'Completed': false
+            });
+
+            // 2. Clear inputs & close modal
+            nameEl.value = '';
+            categoryEl.value = '';
+            targetEl.value = '5';
             closeAddHabitModal();
 
-            // Support both GET and POST fallback for habit creation
+            // 3. Render dashboard immediately!
+            renderUI();
+
+            // 4. Send to Google Sheets in background
             try {
                 const url = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${target}`;
                 const res = await fetch(url);
                 const json = await res.json();
                 if (json.status === "success") {
-                    alert("Habit successfully saved to Google Sheets!");
-                    loadGoogleSheetData();
+                    console.log("Habit saved to Google Sheets successfully.");
                 } else {
-                    alert("Error saving: " + json.message);
+                    console.warn("Google Sheets returned notice:", json.message);
                 }
             } catch (err) {
-                console.error("Failed to save habit via GET, attempting POST fallback:", err);
-                try {
-                    await fetch(WEB_APP_URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({
-                            sheet: "Habits",
-                            action: "addRow",
-                            values: [habitId, name, category, parseInt(target), false]
-                        })
-                    });
-                    alert("Habit saved to Google Sheets!");
-                    loadGoogleSheetData();
-                } catch (postErr) {
-                    console.error("POST fallback failed:", postErr);
-                    alert("Network error saving habit.");
-                }
+                console.warn("Background sync error (habit is saved locally in UI):", err);
             }
         }
 
