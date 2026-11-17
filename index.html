@@ -71,7 +71,7 @@
                         <circle cx="40" cy="40" r="32" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="none"></circle>
                         <circle cx="40" cy="40" r="32" stroke="#10b981" stroke-width="6" stroke-dasharray="201" stroke-dashoffset="52" stroke-linecap="round" fill="none"></circle>
                     </svg>
-                    <span class="absolute text-sm font-bold text-white" id="overall-pct">0%</span>
+                    <span class="absolute text-sm font-bold text-white">0%</span>
                 </div>
                 <div>
                     <div class="text-2xl font-bold text-white mb-1" id="overall-counts">0 Habits / 0 Tasks</div>
@@ -144,6 +144,7 @@
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
+    <!-- JavaScript Application Logic -->
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1wgglqfaSIA22A2MQZFgbz3HUDQi-AiqYBszfrcCFlUMYzaowWTZaYWP6wysIOy8/exec";
 
@@ -295,8 +296,8 @@
                     labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                     datasets: [
                         { label: 'Energy', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Focus', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Motivation', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                        { label: 'Focus', data: [7, 8, 6, 9, 7, 8, 9], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                        { label: 'Motivation', data: [9, 8, 8, 7, 9, 10, 9], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
                     ]
                 },
                 options: {
@@ -329,8 +330,8 @@
             if (!name) return;
 
             const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
-            const newHabitRow = [habitId, name, category, parseInt(target), false];
 
+            // Optimistically update local view
             trackerData.habits.push({
                 "ID": habitId,
                 "Habit Name": name,
@@ -342,20 +343,13 @@
             closeAddHabitModal();
             renderUI();
 
-            // Send via text/plain to avoid CORS preflight failures in Google Apps Script
+            // Send via GET request to avoid CORS / 302 POST redirects
             try {
-                await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({
-                        sheet: "Habits",
-                        action: "addRow",
-                        values: newHabitRow
-                    })
-                });
-                console.log("Habit successfully saved and synced to Google Sheets!");
+                const url = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${target}`;
+                await fetch(url);
+                console.log("Habit saved to Google Sheet successfully!");
             } catch (err) {
-                console.error("Failed to sync habit:", err);
+                console.error("Failed to save habit:", err);
             }
         }
 
@@ -363,43 +357,4 @@
         loadGoogleSheetData();
     </script>
 </body>
-</html>async function saveNewHabit() {
-    const name = document.getElementById('new-habit-name').value;
-    const category = document.getElementById('new-habit-category').value || "General";
-    const target = parseInt(document.getElementById('new-habit-target').value) || 5;
-
-    if (!name) return;
-
-    const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
-    // Row matching your Habits tab columns: ID, Habit Name, Category, Target Days/Week, Archived
-    const newHabitRow = [habitId, name, category, target, false];
-
-    // 1. Instantly update local app view
-    trackerData.habits.push({
-        "ID": habitId,
-        "Habit Name": name,
-        "Category": category,
-        "Target Days/Week": target,
-        "Archived": false
-    });
-
-    closeAddHabitModal();
-    renderUI();
-
-    // 2. Send POST request to Google Apps Script to save it permanently in Google Sheets
-    try {
-        const response = await fetch(WEB_APP_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-                sheet: "Habits",
-                action: "addRow",
-                values: newHabitRow
-            })
-        });
-        const result = await response.json();
-        console.log("Sheet Save Result:", result);
-    } catch (err) {
-        console.error("Failed to save habit to sheet:", err);
-    }
-}
+</html>
