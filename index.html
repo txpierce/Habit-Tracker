@@ -331,25 +331,22 @@
 
             const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
 
-            // Optimistically update local view
-            trackerData.habits.push({
-                "ID": habitId,
-                "Habit Name": name,
-                "Category": category,
-                "Target Days/Week": target,
-                "Archived": false
-            });
-
             closeAddHabitModal();
-            renderUI();
 
-            // Send via GET request to avoid CORS / 302 POST redirects
+            // Send via GET request to Apps Script to instantly write to Google Sheets
             try {
                 const url = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${target}`;
-                await fetch(url);
-                console.log("Habit saved to Google Sheet successfully!");
+                const res = await fetch(url);
+                const json = await res.json();
+                if (json.status === "success") {
+                    alert("Habit successfully saved to Google Sheets!");
+                    loadGoogleSheetData(); // Reload data from sheet
+                } else {
+                    alert("Error saving: " + json.message);
+                }
             } catch (err) {
                 console.error("Failed to save habit:", err);
+                alert("Network error saving habit.");
             }
         }
 
