@@ -44,14 +44,14 @@
         </div>
 
         <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end flex-wrap">
-            <button onclick="openAddHabitModal()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-900/40 flex items-center gap-2">
+            <button onclick="openAddHabitModal()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-900/40 flex items-center gap-2 cursor-pointer">
                 + Add Habit
             </button>
             <div class="glass-card px-4 py-2.5 rounded-xl flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10">
                 <div class="text-xs text-slate-300 font-medium">Week Start Date</div>
-                <div class="text-sm font-bold text-emerald-400">04.01.2026</div>
+                <div class="text-sm font-bold text-emerald-400" id="current-week-label">11.17.2026</div>
             </div>
-            <button onclick="loadGoogleSheetData()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-900/40 flex items-center gap-2">
+            <button onclick="loadGoogleSheetData()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-900/40 flex items-center gap-2 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 Sync Data
             </button>
@@ -72,11 +72,11 @@
                         <circle cx="40" cy="40" r="32" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="none"></circle>
                         <circle cx="40" cy="40" r="32" stroke="#10b981" stroke-width="6" stroke-dasharray="201" stroke-dashoffset="52" stroke-linecap="round" fill="none"></circle>
                     </svg>
-                    <span class="absolute text-sm font-bold text-white" id="overall-percentage">74%</span>
+                    <span class="absolute text-sm font-bold text-white">74%</span>
                 </div>
                 <div>
-                    <div class="text-2xl font-bold text-white mb-1" id="overall-counts">0 / 0 Completed</div>
-                    <div class="text-xs text-slate-400">Total weekly habits and tasks checked off successfully across all categories.</div>
+                    <div class="text-2xl font-bold text-white mb-1" id="overall-counts">0 Habits / 0 Tasks</div>
+                    <div class="text-xs text-slate-400">Total active habits and tasks loaded from your Google Sheet.</div>
                 </div>
             </div>
         </div>
@@ -121,9 +121,9 @@
         <!-- Populated via JS -->
     </div>
 
-    <!-- Add Habit Modal -->
-    <div id="habit-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="glass-card p-6 rounded-2xl w-full max-w-md border border-slate-700">
+    <!-- Add Habit Modal Form -->
+    <div id="habit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="glass-card p-6 rounded-2xl w-full max-w-md border border-slate-700 shadow-2xl">
             <h3 class="text-lg font-semibold text-white mb-4">Add New Habit</h3>
             <div class="space-y-4">
                 <div>
@@ -140,8 +140,8 @@
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-6">
-                <button onclick="closeAddHabitModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold">Cancel</button>
-                <button onclick="saveNewHabit()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold">Save Habit</button>
+                <button onclick="closeAddHabitModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold cursor-pointer">Cancel</button>
+                <button onclick="saveNewHabit()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold cursor-pointer">Save Habit</button>
             </div>
         </div>
     </div>
@@ -160,15 +160,24 @@
             habits: [],
             tasks: [],
             days: [
-                { name: "Sunday", date: "04.01.2026", color: "#8b5cf6", completion: 100 },
-                { name: "Monday", date: "05.01.2026", color: "#3b82f6", completion: 86 },
-                { name: "Tuesday", date: "06.01.2026", color: "#06b6d4", completion: 50 },
-                { name: "Wednesday", date: "07.01.2026", color: "#10b981", completion: 83 },
-                { name: "Thursday", date: "08.01.2026", color: "#84cc16", completion: 50 },
-                { name: "Friday", date: "09.01.2026", color: "#f59e0b", completion: 67 },
-                { name: "Saturday", date: "10.01.2026", color: "#ec4899", completion: 83 }
+                { name: "Sunday", color: "#8b5cf6", completion: 100 },
+                { name: "Monday", color: "#3b82f6", completion: 86 },
+                { name: "Tuesday", color: "#06b6d4", completion: 50 },
+                { name: "Wednesday", color: "#10b981", completion: 83 },
+                { name: "Thursday", color: "#84cc16", completion: 50 },
+                { name: "Friday", color: "#f59e0b", completion: 67 },
+                { name: "Saturday", color: "#ec4899", completion: 83 }
             ]
         };
+
+        // Set current date dynamically
+        function initDates() {
+            const today = new Date();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            document.getElementById('current-week-label').textContent = `${mm}.${dd}.${yyyy}`;
+        }
 
         async function loadGoogleSheetData() {
             const statusEl = document.getElementById('sync-status');
@@ -176,4 +185,191 @@
             statusEl.className = "text-amber-400 font-medium";
 
             try {
-                const response
+                const response = await fetch(`${WEB_APP_URL}?action=getData`);
+                const result = await response.json();
+                if (result.status === "success") {
+                    trackerData.habits = result.habits || [];
+                    trackerData.tasks = result.tasks || [];
+                    statusEl.textContent = "● Live Connected";
+                    statusEl.className = "text-emerald-400 font-medium";
+                }
+            } catch (err) {
+                console.warn("Using offline fallback data:", err);
+                statusEl.textContent = "● Offline Mode (Cached)";
+                statusEl.className = "text-cyan-400 font-medium";
+            }
+
+            renderUI();
+        }
+
+        function renderUI() {
+            renderStats();
+            renderDailyRings();
+            renderDailyColumns();
+            renderCharts();
+        }
+
+        function renderStats() {
+            const totalHabits = trackerData.habits.length;
+            const totalTasks = trackerData.tasks.length;
+            document.getElementById('overall-counts').textContent = `${totalHabits} Habits / ${totalTasks} Tasks`;
+        }
+
+        function renderDailyRings() {
+            const container = document.getElementById('daily-rings-container');
+            container.innerHTML = '';
+
+            trackerData.days.forEach(day => {
+                let card = document.createElement('div');
+                card.className = "glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-lg";
+                
+                card.innerHTML = `
+                    <div class="text-xs font-bold text-slate-200 mb-1">${day.name}</div>
+                    <div class="relative w-16 h-16 flex items-center justify-center my-2">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle cx="32" cy="32" r="26" stroke="rgba(255,255,255,0.08)" stroke-width="5" fill="none"></circle>
+                            <circle cx="32" cy="32" r="26" stroke="${day.color}" stroke-width="5" stroke-dasharray="163" stroke-dashoffset="${163 - (163 * day.completion) / 100}" stroke-linecap="round" fill="none"></circle>
+                        </svg>
+                        <span class="absolute text-xs font-bold text-white">${day.completion}%</span>
+                    </div>
+                    <div class="text-[10px] text-emerald-400 font-medium">Active Sync</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderDailyColumns() {
+            const container = document.getElementById('daily-task-columns');
+            container.innerHTML = '';
+
+            trackerData.days.forEach(day => {
+                let col = document.createElement('div');
+                col.className = "glass-card p-4 rounded-2xl flex flex-col justify-between border border-slate-800 min-h-[220px]";
+
+                let habitsHTML = '';
+                if (trackerData.habits.length === 0) {
+                    habitsHTML = `<div class="text-xs text-slate-500 italic py-2">No habits. Click '+ Add Habit' above!</div>`;
+                } else {
+                    habitsHTML = trackerData.habits.map(h => `
+                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2">
+                            <div class="text-xs text-slate-200 font-medium truncate max-w-[120px]">${h['Habit Name'] || h.name}</div>
+                            <input type="checkbox" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
+                        </div>
+                    `).join('');
+                }
+
+                col.innerHTML = `
+                    <div>
+                        <div class="text-sm font-bold text-white mb-2" style="color: ${day.color};">${day.name}</div>
+                        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Habits</div>
+                        <div class="space-y-2 mb-4">
+                            ${habitsHTML}
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400">
+                        <span>Total Active</span>
+                        <span class="font-bold text-white">${trackerData.habits.length} Habits</span>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+        }
+
+        function renderCharts() {
+            const ctxBar = document.getElementById('barTrendChart').getContext('2d');
+            new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [{
+                        data: [6, 7, 5, 6, 5, 6, 7],
+                        backgroundColor: '#10b981',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { display: false, min: 0, max: 8 },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            const ctxLine = document.getElementById('mindsetLineChart').getContext('2d');
+            new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [
+                        { label: 'Energy', data: [8, 7, 9, 6, 8, 9, 10], borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                        { label: 'Focus', data: [7, 8, 6, 9, 7, 8, 9], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                        { label: 'Motivation', data: [9, 8, 8, 7, 9, 10, 9], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { display: false, min: 0, max: 12 },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        function openAddHabitModal() {
+            document.getElementById('habit-modal').classList.remove('hidden');
+            document.getElementById('habit-modal').classList.add('flex');
+        }
+
+        function closeAddHabitModal() {
+            document.getElementById('habit-modal').classList.remove('flex');
+            document.getElementById('habit-modal').classList.add('hidden');
+        }
+
+        async function saveNewHabit() {
+            const name = document.getElementById('new-habit-name').value;
+            const category = document.getElementById('new-habit-category').value || "General";
+            const target = document.getElementById('new-habit-target').value || 5;
+
+            if (!name) return;
+
+            const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
+            const newHabitRow = [habitId, name, category, parseInt(target), false];
+
+            trackerData.habits.push({
+                "ID": habitId,
+                "Habit Name": name,
+                "Category": category,
+                "Target Days/Week": target,
+                "Archived": false
+            });
+
+            closeAddHabitModal();
+            renderUI();
+
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        sheet: "Habits",
+                        action: "addRow",
+                        values: newHabitRow
+                    })
+                });
+                console.log("Habit synced to Google Sheets!");
+            } catch (err) {
+                console.error("Failed to sync habit:", err);
+            }
+        }
+
+        // Initialize on page load
+        initDates();
+        loadGoogleSheetData();
+    </script>
+</body>
+</html>
