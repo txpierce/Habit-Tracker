@@ -43,7 +43,10 @@
             <p class="text-sm text-slate-400 mt-1">Live synchronized with Google Sheets Backend</p>
         </div>
 
-        <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+        <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end flex-wrap">
+            <button onclick="openAddHabitModal()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-900/40 flex items-center gap-2">
+                + Add Habit
+            </button>
             <div class="glass-card px-4 py-2.5 rounded-xl flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10">
                 <div class="text-xs text-slate-300 font-medium">Week Start Date</div>
                 <div class="text-sm font-bold text-emerald-400">04.01.2026</div>
@@ -105,17 +108,42 @@
         </div>
     </div>
 
-    <!-- Daily Circular Progress Dashboard (Matches Reference Image UI) -->
+    <!-- Daily Circular Progress Dashboard -->
     <div class="glass-card p-6 rounded-2xl mb-8">
         <h3 class="text-lg font-semibold text-white mb-6">Daily Breakdown & Completion Rings</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4" id="daily-rings-container">
-            <!-- Dynamically populated via JavaScript -->
+            <!-- Populated via JS -->
         </div>
     </div>
 
-    <!-- Daily Task Columns (Sunday through Saturday - Matches Inspiration) -->
+    <!-- Daily Task & Habits Columns (Sunday through Saturday) -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-8" id="daily-task-columns">
-        <!-- Populated dynamically -->
+        <!-- Populated via JS -->
+    </div>
+
+    <!-- Add Habit Modal -->
+    <div id="habit-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="glass-card p-6 rounded-2xl w-full max-w-md border border-slate-700">
+            <h3 class="text-lg font-semibold text-white mb-4">Add New Habit</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Habit Name</label>
+                    <input type="text" id="new-habit-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" placeholder="e.g. Morning Jog">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Category</label>
+                    <input type="text" id="new-habit-category" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" placeholder="e.g. Health & Fitness">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Target Days / Week</label>
+                    <input type="number" id="new-habit-target" min="1" max="7" value="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeAddHabitModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold">Cancel</button>
+                <button onclick="saveNewHabit()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold">Save Habit</button>
+            </div>
+        </div>
     </div>
 
     <!-- Footer Status -->
@@ -130,19 +158,15 @@
 
         let trackerData = {
             habits: [
-                { name: "Morning Workout", category: "Health", color: "#a855f7" },
-                { name: "Read 20 Mins", category: "Growth", color: "#3b82f6" },
-                { name: "Deep Work", category: "Productivity", color: "#06b6d4" },
-                { name: "Meditate", category: "Mindfulness", color: "#10b981" }
+                { "ID": "H-001", "Habit Name": "Morning Workout", "Category": "Health", "Target Days/Week": 5 },
+                { "ID": "H-002", "Habit Name": "Read 20 Mins", "Category": "Growth", "Target Days/Week": 7 },
+                { "ID": "H-003", "Habit Name": "Deep Work", "Category": "Productivity", "Target Days/Week": 5 },
+                { "ID": "H-004", "Habit Name": "Meditate", "Category": "Mindfulness", "Target Days/Week": 7 }
             ],
             tasks: [
-                { name: "Outline weekly goals", day: "Sunday", priority: "High", completed: true },
-                { name: "Check and respond to emails", day: "Monday", priority: "Medium", completed: true },
-                { name: "Draft content or ideas", day: "Tuesday", priority: "High", completed: false },
-                { name: "Mid-week progress check", day: "Wednesday", priority: "Low", completed: true },
-                { name: "Review active projects", day: "Thursday", priority: "Medium", completed: true },
-                { name: "Log weekly progress", day: "Friday", priority: "High", completed: false },
-                { name: "Household tasks & admin", day: "Saturday", priority: "Low", completed: true }
+                { "ID": "T-001", "Task Name": "Outline weekly goals", "Due Date": "2026-01-04", "Priority": "High", "Status": "Completed" },
+                { "ID": "T-002", "Task Name": "Check and respond to emails", "Due Date": "2026-01-05", "Priority": "Medium", "Status": "In Progress" },
+                { "ID": "T-003", "Task Name": "Draft content or ideas", "Due Date": "2026-01-06", "Priority": "High", "Status": "Not Started" }
             ],
             days: [
                 { name: "Sunday", date: "04.01.2026", color: "#8b5cf6", completion: 100 },
@@ -164,21 +188,8 @@
                 const response = await fetch(`${WEB_APP_URL}?action=getData`);
                 const result = await response.json();
                 if (result.status === "success") {
-                    if (result.habits && result.habits.length > 0) {
-                        trackerData.habits = result.habits.map(h => ({
-                            name: h['Habit Name'] || h.name,
-                            category: h['Category'] || 'General',
-                            color: '#3b82f6'
-                        }));
-                    }
-                    if (result.tasks && result.tasks.length > 0) {
-                        trackerData.tasks = result.tasks.map(t => ({
-                            name: t['Task Name'] || t.name,
-                            day: 'Monday',
-                            priority: t['Priority'] || 'Medium',
-                            completed: (t['Status'] === 'Completed' || t.completed === true)
-                        }));
-                    }
+                    if (result.habits && result.habits.length > 0) trackerData.habits = result.habits;
+                    if (result.tasks && result.tasks.length > 0) trackerData.tasks = result.tasks;
                     statusEl.textContent = "● Live Connected";
                     statusEl.className = "text-emerald-400 font-medium";
                 }
@@ -193,7 +204,7 @@
 
         function renderUI() {
             renderDailyRings();
-            renderDailyTaskColumns();
+            renderDailyColumns();
             renderCharts();
         }
 
@@ -221,7 +232,7 @@
             });
         }
 
-        function renderDailyTaskColumns() {
+        function renderDailyColumns() {
             const container = document.getElementById('daily-task-columns');
             container.innerHTML = '';
 
@@ -229,18 +240,10 @@
                 let col = document.createElement('div');
                 col.className = "glass-card p-4 rounded-2xl flex flex-col justify-between border border-slate-800";
 
-                let dayTasks = trackerData.tasks.filter(t => t.day === day.name);
-                if (dayTasks.length === 0) {
-                    dayTasks = [
-                        { name: `Review daily goals`, priority: 'Medium', completed: Math.random() > 0.3 },
-                        { name: `Deep work session`, priority: 'High', completed: Math.random() > 0.5 }
-                    ];
-                }
-
-                let tasksHTML = dayTasks.map(t => `
-                    <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-2 mb-2">
-                        <input type="checkbox" ${t.completed ? 'checked' : ''} class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
-                        <div class="text-xs text-slate-200 ${t.completed ? 'line-through text-slate-500' : ''}">${t.name}</div>
+                let habitsHTML = trackerData.habits.map(h => `
+                    <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2">
+                        <div class="text-xs text-slate-200 font-medium">${h['Habit Name']}</div>
+                        <input type="checkbox" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
                     </div>
                 `).join('');
 
@@ -248,14 +251,14 @@
                     <div>
                         <div class="text-sm font-bold text-white mb-0.5" style="color: ${day.color};">${day.name}</div>
                         <div class="text-[10px] text-slate-400 mb-4">${day.date}</div>
-                        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tasks</div>
+                        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Habits</div>
                         <div class="space-y-2 mb-4">
-                            ${tasksHTML}
+                            ${habitsHTML}
                         </div>
                     </div>
                     <div class="pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400">
-                        <span>Completed</span>
-                        <span class="font-bold text-white">${dayTasks.filter(t => t.completed).length} / ${dayTasks.length}</span>
+                        <span>Target</span>
+                        <span class="font-bold text-white">${trackerData.habits.length} Habits</span>
                     </div>
                 `;
                 container.appendChild(col);
@@ -263,7 +266,6 @@
         }
 
         function renderCharts() {
-            // Bar Trend Chart
             const ctxBar = document.getElementById('barTrendChart').getContext('2d');
             new Chart(ctxBar, {
                 type: 'bar',
@@ -286,7 +288,6 @@
                 }
             });
 
-            // Mindset Line Chart
             const ctxLine = document.getElementById('mindsetLineChart').getContext('2d');
             new Chart(ctxLine, {
                 type: 'line',
@@ -310,7 +311,52 @@
             });
         }
 
-        // Initialize on page load
+        function openAddHabitModal() {
+            document.getElementById('habit-modal').classList.remove('hidden');
+            document.getElementById('habit-modal').classList.add('flex');
+        }
+
+        function closeAddHabitModal() {
+            document.getElementById('habit-modal').classList.remove('flex');
+            document.getElementById('habit-modal').classList.add('hidden');
+        }
+
+        async function saveNewHabit() {
+            const name = document.getElementById('new-habit-name').value;
+            const category = document.getElementById('new-habit-category').value || "General";
+            const target = document.getElementById('new-habit-target').value || 5;
+
+            if (!name) return;
+
+            const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
+            const newHabitRow = [habitId, name, category, parseInt(target), false];
+
+            trackerData.habits.push({
+                "ID": habitId,
+                "Habit Name": name,
+                "Category": category,
+                "Target Days/Week": target,
+                "Archived": false
+            });
+
+            closeAddHabitModal();
+            renderUI();
+
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        sheet: "Habits",
+                        action: "addRow",
+                        values: newHabitRow
+                    })
+                });
+                console.log("Habit synced to Google Sheets!");
+            } catch (err) {
+                console.error("Failed to sync habit:", err);
+            }
+        }
+
         loadGoogleSheetData();
     </script>
 </body>
