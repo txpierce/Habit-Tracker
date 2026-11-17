@@ -140,7 +140,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v3.0</span>
+        <span>Quiet Progress Habit & Task Tracker v4.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -281,6 +281,9 @@
 
         async function toggleDailyHabit(habitName, isChecked) {
             const todayDate = document.getElementById('current-week-label').textContent;
+            const statusEl = document.getElementById('sync-status');
+            statusEl.textContent = "● Logging to Sheet...";
+            statusEl.className = "text-amber-400 font-medium";
             
             try {
                 const url = `${WEB_APP_URL}?action=logHabit&name=${encodeURIComponent(habitName)}&date=${encodeURIComponent(todayDate)}&completed=${isChecked}`;
@@ -289,11 +292,17 @@
                 
                 if (json.status === "success") {
                     console.log(`Successfully logged '${habitName}' (${isChecked}) to Daily_Logs!`);
+                    statusEl.textContent = "● Logged to Sheets";
+                    statusEl.className = "text-emerald-400 font-medium";
                 } else {
                     console.error("Failed to log habit:", json.message);
+                    statusEl.textContent = "● Logging Failed";
+                    statusEl.className = "text-rose-400 font-medium";
                 }
             } catch (err) {
                 console.error("Network error logging habit to Google Sheets:", err);
+                statusEl.textContent = "● Network Error";
+                statusEl.className = "text-rose-400 font-medium";
             }
         }
 
@@ -369,7 +378,7 @@
 
             const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
 
-            // 1. Instant local state update (UI updates immediately on screen!)
+            // 1. Local UI Update
             trackerData.habits.push({
                 'ID': habitId,
                 'Habit Name': name,
@@ -387,21 +396,55 @@
             targetEl.value = '5';
             closeAddHabitModal();
 
-            // 3. Render dashboard immediately!
+            // 3. Render dashboard immediately
             renderUI();
 
-            // 4. Send to Google Sheets in background
+            // 4. Send to Google Sheets with visual status update
+            const statusEl = document.getElementById('sync-status');
+            statusEl.textContent = "● Saving to Google Sheets...";
+            statusEl.className = "text-amber-400 font-medium";
+
             try {
+                // Primary Method: GET request
                 const url = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${target}`;
                 const res = await fetch(url);
                 const json = await res.json();
+                
                 if (json.status === "success") {
-                    console.log("Habit saved to Google Sheets successfully.");
+                    statusEl.textContent = "● Saved to Google Sheets";
+                    statusEl.className = "text-emerald-400 font-medium";
+                    console.log("Habit saved to Google Sheets!");
                 } else {
-                    console.warn("Google Sheets returned notice:", json.message);
+                    throw new Error(json.message || "Unknown Apps Script response");
                 }
             } catch (err) {
-                console.warn("Background sync error (habit is saved locally in UI):", err);
+                console.warn("GET method failed, attempting POST fallback...", err);
+                try {
+                    // Fallback Method: POST request
+                    const postRes = await fetch(WEB_APP_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({
+                            action: "addHabit",
+                            id: habitId,
+                            name: name,
+                            category: category,
+                            target: target
+                        })
+                    });
+                    const postJson = await postRes.json();
+                    if (postJson.status === "success") {
+                        statusEl.textContent = "● Saved to Google Sheets";
+                        statusEl.className = "text-emerald-400 font-medium";
+                    } else {
+                        throw new Error(postJson.message || "POST fallback returned error");
+                    }
+                } catch (postErr) {
+                    console.error("Both GET and POST habit sync failed:", postErr);
+                    statusEl.textContent = "● Sync Error: Check Apps Script";
+                    statusEl.className = "text-rose-400 font-medium";
+                    alert("Error saving habit to Google Sheets. Please ensure you have deployed a NEW VERSION in Google Apps Script with access set to 'Anyone'.");
+                }
             }
         }
 
