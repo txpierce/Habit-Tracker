@@ -148,7 +148,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v10.0</span>
+        <span>Quiet Progress Habit & Task Tracker v11.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -439,7 +439,7 @@
             statusEl.textContent = "● Saving to Google Sheets...";
             statusEl.className = "text-amber-400 font-medium";
 
-            const addUrl = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${target}`;
+            const addUrl = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${encodeURIComponent(target)}`;
 
             try {
                 // Fire no-cors GET fetch - guarantees network delivery to Apps Script even from file:// or local origins
