@@ -155,7 +155,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v22.0</span>
+        <span>Quiet Progress Habit & Task Tracker v23.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -192,13 +192,19 @@
             });
         }
 
-        function isHabitCompleted(habitName) {
-            const todayDate = document.getElementById('current-week-label') ? document.getElementById('current-week-label').textContent : '';
+        function isHabitCompleted(habitName, dayName) {
+            const dayShort = dayName ? dayName.substring(0, 3).toLowerCase() : '';
+            const dayLower = dayName ? dayName.toLowerCase() : '';
+
             return trackerData.logs.some(l => {
                 const lName = String(l['Habit Name'] || l['Habit ID'] || l['name'] || '').trim();
+                const lDay = String(l['Day'] || l['day'] || '').trim().toLowerCase();
                 const isComp = (l['Completed'] === true || l['Completed'] === 'TRUE' || l['Completed'] === 'true' || l['completed'] === true);
-                const isToday = !todayDate || String(l['Date'] || l['date'] || '').trim() === String(todayDate).trim();
-                return lName.toLowerCase() === String(habitName).trim().toLowerCase() && isComp && isToday;
+
+                const nameMatch = lName.toLowerCase() === String(habitName).trim().toLowerCase();
+                const dayMatch = !dayName || !lDay || lDay === dayLower || lDay === dayShort;
+
+                return nameMatch && dayMatch && isComp;
             });
         }
 
@@ -267,7 +273,7 @@ let barChartInstance = null;
                 totalScheduled += dayHabits.length;
                 dayHabits.forEach(h => {
                     const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || h['ID'] || h['id'] || "Untitled Habit";
-                    if (isHabitCompleted(habitName)) {
+                    if (isHabitCompleted(habitName, day.name)) {
                         totalCompleted++;
                     }
                 });
@@ -297,7 +303,7 @@ let barChartInstance = null;
                 let dayCompletedCount = 0;
                 dayHabits.forEach(h => {
                     const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || h['ID'] || h['id'] || "Untitled Habit";
-                    if (isHabitCompleted(habitName)) {
+                    if (isHabitCompleted(habitName, day.name)) {
                         dayCompletedCount++;
                     }
                 });
@@ -348,15 +354,12 @@ let barChartInstance = null;
                     habitsHTML = dayHabits.map(h => {
                         const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || h['ID'] || h['id'] || "Untitled Habit";
                         
-                        const isChecked = trackerData.logs.some(l => 
-                            (l['Habit Name'] === habitName || l['Habit ID'] === habitName) && 
-                            (l['Completed'] === true || l['Completed'] === 'TRUE' || l['Completed'] === 'true')
-                        );
+                        const isChecked = isHabitCompleted(habitName, day.name);
 
                         return `
                         <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2">
                             <div class="text-xs text-slate-200 font-medium truncate max-w-[120px]">${habitName}</div>
-                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDailyHabit('${habitName}', this.checked)" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDailyHabit('${habitName}', this.checked, '${day.name}')" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
                         </div>
                     `}).join('');
                 }
@@ -378,25 +381,34 @@ let barChartInstance = null;
             });
         }
 
-        function toggleDailyHabit(habitName, isChecked) {
-            const todayDate = document.getElementById('current-week-label').textContent;
+        function toggleDailyHabit(habitName, isChecked, dayName) {
+            const todayDate = document.getElementById('current-week-label') ? document.getElementById('current-week-label').textContent : '';
             const statusEl = document.getElementById('sync-status');
             statusEl.textContent = "● Logging to Sheets...";
             statusEl.className = "text-amber-400 font-medium";
 
-            // 1. Update in-memory trackerData.logs immediately
+            const targetDay = dayName || '';
+            const dayShort = targetDay ? targetDay.substring(0, 3).toLowerCase() : '';
+
+            // 1. Update in-memory trackerData.logs immediately for specific day
             let existingLog = trackerData.logs.find(l => {
                 const lName = String(l['Habit Name'] || l['Habit ID'] || l['name'] || '').trim();
-                return lName.toLowerCase() === String(habitName).trim().toLowerCase();
+                const lDay = String(l['Day'] || l['day'] || '').trim().toLowerCase();
+                const nameMatch = lName.toLowerCase() === String(habitName).trim().toLowerCase();
+                const dayMatch = !targetDay || lDay === targetDay.toLowerCase() || lDay === dayShort;
+                return nameMatch && dayMatch;
             });
 
             if (existingLog) {
                 existingLog['Completed'] = isChecked;
                 existingLog['completed'] = isChecked;
+                existingLog['Day'] = targetDay;
             } else {
                 trackerData.logs.push({
                     'Habit Name': habitName,
                     'name': habitName,
+                    'Day': targetDay,
+                    'day': targetDay,
                     'Date': todayDate,
                     'Completed': isChecked,
                     'completed': isChecked
@@ -410,6 +422,7 @@ let barChartInstance = null;
             sendBackendSync({
                 action: 'logHabit',
                 name: habitName,
+                day: targetDay,
                 date: todayDate,
                 completed: isChecked
             });
@@ -433,7 +446,7 @@ let barChartInstance = null;
                 let dayCompletedCount = 0;
                 dayHabits.forEach(h => {
                     const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || h['ID'] || h['id'] || "Untitled Habit";
-                    if (isHabitCompleted(habitName)) {
+                    if (isHabitCompleted(habitName, day.name)) {
                         dayCompletedCount++;
                     }
                 });
