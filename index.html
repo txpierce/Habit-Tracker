@@ -58,6 +58,24 @@
         </div>
     </header>
 
+    <!-- View Navigation Bar (Tabs) -->
+    <div class="flex items-center gap-2 mb-8 glass-card p-2 rounded-2xl w-fit border border-slate-800">
+        <button id="tab-weekly" onclick="switchView('weekly')" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-600 text-white shadow-lg flex items-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            Weekly View
+        </button>
+        <button id="tab-monthly" onclick="switchView('monthly')" class="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            Monthly View
+        </button>
+        <button id="tab-yearly" onclick="switchView('yearly')" class="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            Yearly View
+        </button>
+    </div>
+
+    <div id="view-weekly" class="view-content">
+
     <!-- Top Analytics & Progress Bar Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
@@ -172,7 +190,193 @@
         </div>
     </div>
 
-    <!-- Add Habit Modal Form -->
+    
+    </div><!-- End Weekly View -->
+
+    <!-- Monthly View Section -->
+    <div id="view-monthly" class="view-content hidden">
+        <!-- Monthly Header & Selector -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 glass-card p-6 rounded-2xl border border-slate-800">
+            <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="text-emerald-400">📊</span> Monthly Progress Analytics
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Monthly completion rates, 30-day trends, and habit consistency rankings</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-400 font-medium">Selected Month:</span>
+                <span id="monthly-label" class="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm font-bold text-emerald-400">Current Month</span>
+            </div>
+        </div>
+
+        <!-- Monthly Top Analytics Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Monthly Progress Ring -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-semibold text-white">Monthly Completion Rate</h3>
+                    <span class="text-xs text-emerald-400 font-medium">● Monthly Sync</span>
+                </div>
+                <div class="flex items-center gap-6 my-2">
+                    <div class="relative w-24 h-24 flex items-center justify-center">
+                        <svg class="w-24 h-24 transform -rotate-90">
+                            <circle cx="48" cy="48" r="38" stroke="rgba(255,255,255,0.1)" stroke-width="7" fill="none"></circle>
+                            <circle cx="48" cy="48" r="38" stroke="#10b981" stroke-width="7" stroke-dasharray="238" stroke-dashoffset="238" stroke-linecap="round" fill="none" id="monthly-ring"></circle>
+                        </svg>
+                        <span class="absolute text-base font-bold text-white" id="monthly-pct">0%</span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white mb-1" id="monthly-counts">0 / 0 Done</div>
+                        <div class="text-xs text-slate-400">Total habits completed out of scheduled habits this month.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Day-by-Day Completion Trend Chart -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-base font-semibold text-white">Monthly Completion Trend</h3>
+                    <span class="text-xs text-slate-400">Day 1 - 31</span>
+                </div>
+                <div class="h-36 relative">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Monthly Mindset Trend Chart -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-base font-semibold text-white">Monthly Mindset Averages</h3>
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <span class="text-pink-400">● Energy</span>
+                        <span class="text-cyan-400">● Focus</span>
+                        <span class="text-emerald-400">● Motivation</span>
+                    </div>
+                </div>
+                <div class="h-36 relative">
+                    <canvas id="monthlyMindsetChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Habit Performance Breakdown Table -->
+        <div class="glass-card p-6 rounded-2xl mb-8">
+            <h3 class="text-lg font-semibold text-white mb-4">Habit Consistency & Performance Breakdown</h3>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider">
+                            <th class="py-3 px-4">Habit Name</th>
+                            <th class="py-3 px-4">Category</th>
+                            <th class="py-3 px-4">Scheduled Days</th>
+                            <th class="py-3 px-4">Completed This Month</th>
+                            <th class="py-3 px-4">Completion Rate</th>
+                            <th class="py-3 px-4">Consistency Level</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthly-habit-table-body" class="text-sm text-slate-200 divide-y divide-slate-800/60">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- End Monthly View -->
+
+    <!-- Yearly View Section -->
+    <div id="view-yearly" class="view-content hidden">
+        <!-- Yearly Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 glass-card p-6 rounded-2xl border border-slate-800">
+            <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="text-cyan-400">📈</span> Yearly Performance & Growth
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">12-month completion trends, annual milestones, and overall growth stats</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-400 font-medium">Year:</span>
+                <span id="yearly-label" class="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm font-bold text-cyan-400">Yearly Overview</span>
+            </div>
+        </div>
+
+        <!-- Yearly Top Analytics Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Yearly Overall Progress Ring -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-semibold text-white">Yearly Completion Rate</h3>
+                    <span class="text-xs text-cyan-400 font-medium">● Year-To-Date</span>
+                </div>
+                <div class="flex items-center gap-6 my-2">
+                    <div class="relative w-24 h-24 flex items-center justify-center">
+                        <svg class="w-24 h-24 transform -rotate-90">
+                            <circle cx="48" cy="48" r="38" stroke="rgba(255,255,255,0.1)" stroke-width="7" fill="none"></circle>
+                            <circle cx="48" cy="48" r="38" stroke="#06b6d4" stroke-width="7" stroke-dasharray="238" stroke-dashoffset="238" stroke-linecap="round" fill="none" id="yearly-ring"></circle>
+                        </svg>
+                        <span class="absolute text-base font-bold text-white" id="yearly-pct">0%</span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white mb-1" id="yearly-counts">0 YTD Completed</div>
+                        <div class="text-xs text-slate-400">Total habits logged across all 12 months.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12-Month Bar Trend Chart -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-base font-semibold text-white">12-Month Completion Trend</h3>
+                    <span class="text-xs text-slate-400">Jan - Dec</span>
+                </div>
+                <div class="h-36 relative">
+                    <canvas id="yearlyTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Yearly Mindset Trend Chart -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-base font-semibold text-white">Yearly Mindset Averages</h3>
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <span class="text-pink-400">● Energy</span>
+                        <span class="text-cyan-400">● Focus</span>
+                        <span class="text-emerald-400">● Motivation</span>
+                    </div>
+                </div>
+                <div class="h-36 relative">
+                    <canvas id="yearlyMindsetChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Milestones & Highlights Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div class="text-xs text-slate-400 font-medium">Total YTD Completions</div>
+                <div class="text-2xl font-bold text-emerald-400 my-2" id="yearly-total-completions">0</div>
+                <div class="text-[11px] text-slate-500">Cumulative habit completions logged</div>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div class="text-xs text-slate-400 font-medium">Most Consistent Habit</div>
+                <div class="text-lg font-bold text-cyan-400 my-2 truncate" id="yearly-top-habit">--</div>
+                <div class="text-[11px] text-slate-500" id="yearly-top-habit-count">0 completions</div>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div class="text-xs text-slate-400 font-medium">Peak Performance Month</div>
+                <div class="text-lg font-bold text-amber-400 my-2" id="yearly-peak-month">--</div>
+                <div class="text-[11px] text-slate-500" id="yearly-peak-month-count">Highest completion month</div>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div class="text-xs text-slate-400 font-medium">Active Scheduled Habits</div>
+                <div class="text-2xl font-bold text-purple-400 my-2" id="yearly-active-habits">0</div>
+                <div class="text-[11px] text-slate-500">Total active habits in database</div>
+            </div>
+        </div>
+    </div><!-- End Yearly View -->
+
+<!-- Add Habit Modal Form -->
     <div id="habit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="glass-card p-6 rounded-2xl w-full max-w-md border border-slate-700 shadow-2xl">
             <h3 class="text-lg font-semibold text-white mb-4">Add New Habit</h3>
@@ -213,12 +417,53 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v24.0</span>
+        <span>Quiet Progress Habit & Task Tracker v25.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
     <!-- JavaScript Application Logic -->
     <script>
+
+        let currentView = 'weekly';
+        let monthlyBarChartInstance = null;
+        let monthlyMindsetChartInstance = null;
+        let yearlyBarChartInstance = null;
+        let yearlyMindsetChartInstance = null;
+
+        function switchView(viewName) {
+            currentView = viewName;
+            ['weekly', 'monthly', 'yearly'].forEach(v => {
+                const btn = document.getElementById(`tab-${v}`);
+                const viewEl = document.getElementById(`view-${v}`);
+                if (v === viewName) {
+                    if (btn) {
+                        btn.className = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-600 text-white shadow-lg flex items-center gap-2 cursor-pointer";
+                    }
+                    if (viewEl) viewEl.classList.remove('hidden');
+                } else {
+                    if (btn) {
+                        btn.className = "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center gap-2 cursor-pointer";
+                    }
+                    if (viewEl) viewEl.classList.add('hidden');
+                }
+            });
+            renderUI();
+        }
+
+        function parseLogDate(dStr) {
+            if (!dStr) return new Date();
+            if (dStr instanceof Date) return dStr;
+            const str = String(dStr).trim();
+            if (/^\d{2}\.\d{2}\.\d{4}$/.test(str)) {
+                const parts = str.split('.');
+                return new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+            }
+            const parsed = new Date(str);
+            if (!isNaN(parsed.getTime())) return parsed;
+            return new Date();
+        }
+
+
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1wgglqfaSIA22A2MQZFgbz3HUDQi-AiqYBszfrcCFlUMYzaowWTZaYWP6wysIOy8/exec";
 
         let trackerData = {
@@ -282,6 +527,356 @@ let barChartInstance = null;
             });
         }
 
+        
+        function renderMonthlyView() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            const monthLabel = document.getElementById('monthly-label');
+            if (monthLabel) monthLabel.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const monthLogs = trackerData.logs.filter(l => {
+                const d = parseLogDate(l['Date'] || l['date']);
+                const isComp = (l['Completed'] === true || l['Completed'] === 'TRUE' || l['Completed'] === 'true' || l['completed'] === true);
+                return d.getFullYear() === currentYear && d.getMonth() === currentMonth && isComp;
+            });
+
+            // Calculate total scheduled habit slots in month
+            let totalMonthlyScheduled = 0;
+            trackerData.habits.forEach(h => {
+                const target = String(h['Target'] || h['target'] || '').trim();
+                if (!target || !isNaN(target)) {
+                    totalMonthlyScheduled += daysInMonth;
+                } else {
+                    const daysList = target.split(',').map(s => s.trim().toLowerCase());
+                    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+                        const dateObj = new Date(currentYear, currentMonth, dayNum);
+                        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                        const dayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
+                        if (daysList.some(d => d === dayName || d === dayShort)) {
+                            totalMonthlyScheduled++;
+                        }
+                    }
+                }
+            });
+
+            const monthlyCompletedCount = monthLogs.length;
+            const monthlyPct = totalMonthlyScheduled > 0 ? Math.round((monthlyCompletedCount / totalMonthlyScheduled) * 100) : (monthlyCompletedCount > 0 ? 100 : 0);
+
+            const mPctEl = document.getElementById('monthly-pct');
+            if (mPctEl) mPctEl.textContent = `${monthlyPct}%`;
+
+            const mRing = document.getElementById('monthly-ring');
+            if (mRing) mRing.style.strokeDashoffset = 238 - (238 * monthlyPct) / 100;
+
+            const mCounts = document.getElementById('monthly-counts');
+            if (mCounts) mCounts.textContent = `${monthlyCompletedCount} / ${totalMonthlyScheduled} Done`;
+
+            // Daily trend array for month
+            const dailyCounts = new Array(daysInMonth).fill(0);
+            monthLogs.forEach(l => {
+                const d = parseLogDate(l['Date'] || l['date']);
+                const dayIdx = d.getDate() - 1;
+                if (dayIdx >= 0 && dayIdx < daysInMonth) {
+                    dailyCounts[dayIdx]++;
+                }
+            });
+
+            // 1. Render Monthly Trend Bar Chart
+            if (monthlyBarChartInstance) monthlyBarChartInstance.destroy();
+            const ctxMB = document.getElementById('monthlyTrendChart');
+            if (ctxMB) {
+                const dayLabels = Array.from({length: daysInMonth}, (_, i) => String(i + 1));
+                const maxM = Math.max(...dailyCounts, 5);
+                monthlyBarChartInstance = new Chart(ctxMB.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: dayLabels,
+                        datasets: [{
+                            data: dailyCounts,
+                            backgroundColor: '#10b981',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { display: false, min: 0, max: maxM + 1 },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 }, maxTicksLimit: 10 } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Render Monthly Mindset Chart
+            if (monthlyMindsetChartInstance) monthlyMindsetChartInstance.destroy();
+            const ctxMM = document.getElementById('monthlyMindsetChart');
+            if (ctxMM) {
+                const monthMindsetLogs = trackerData.mindset.filter(m => {
+                    const d = parseLogDate(m['Date'] || m['date']);
+                    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+                });
+
+                const eArr = new Array(daysInMonth).fill(5);
+                const fArr = new Array(daysInMonth).fill(5);
+                const mArr = new Array(daysInMonth).fill(5);
+
+                monthMindsetLogs.forEach(m => {
+                    const d = parseLogDate(m['Date'] || m['date']);
+                    const dayIdx = d.getDate() - 1;
+                    if (dayIdx >= 0 && dayIdx < daysInMonth) {
+                        if (m['Energy']) eArr[dayIdx] = Number(m['Energy']);
+                        if (m['Focus']) fArr[dayIdx] = Number(m['Focus']);
+                        if (m['Motivation']) mArr[dayIdx] = Number(m['Motivation']);
+                    }
+                });
+
+                monthlyMindsetChartInstance = new Chart(ctxMM.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: daysInMonth}, (_, i) => String(i + 1)),
+                        datasets: [
+                            { label: 'Energy', data: eArr, borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                            { label: 'Focus', data: fArr, borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                            { label: 'Motivation', data: mArr, borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { display: false, min: 0, max: 11 },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 }, maxTicksLimit: 10 } }
+                        }
+                    }
+                });
+            }
+
+            // 3. Render Monthly Habit Table
+            const tbody = document.getElementById('monthly-habit-table-body');
+            if (tbody) {
+                tbody.innerHTML = '';
+                if (trackerData.habits.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 italic">No active habits loaded</td></tr>`;
+                } else {
+                    trackerData.habits.forEach(h => {
+                        const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || "Untitled Habit";
+                        const category = h['Category'] || h['category'] || "General";
+                        const target = h['Target'] || h['target'] || "Daily";
+
+                        const habitCompCount = monthLogs.filter(l => {
+                            const lName = String(l['Habit Name'] || l['Habit ID'] || l['name'] || '').trim();
+                            return lName.toLowerCase() === habitName.toLowerCase();
+                        }).length;
+
+                        let habitScheduled = 0;
+                        const daysList = target.split(',').map(s => s.trim().toLowerCase());
+                        if (!target || target.toLowerCase() === 'daily' || !isNaN(target)) {
+                            habitScheduled = daysInMonth;
+                        } else {
+                            for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+                                const dateObj = new Date(currentYear, currentMonth, dayNum);
+                                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                                const dayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
+                                if (daysList.some(d => d === dayName || d === dayShort)) {
+                                    habitScheduled++;
+                                }
+                            }
+                        }
+
+                        const rate = habitScheduled > 0 ? Math.round((habitCompCount / habitScheduled) * 100) : (habitCompCount > 0 ? 100 : 0);
+                        let badge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">🔥 High (80%+)</span>';
+                        if (rate < 50) {
+                            badge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">🟡 Focus (&lt;50%)</span>';
+                        } else if (rate < 80) {
+                            badge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">🟢 Steady (50-79%)</span>';
+                        }
+
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-900/50 transition-colors";
+                        tr.innerHTML = `
+                            <td class="py-3 px-4 font-semibold text-white">${habitName}</td>
+                            <td class="py-3 px-4 text-slate-400">${category}</td>
+                            <td class="py-3 px-4 text-slate-400">${target}</td>
+                            <td class="py-3 px-4 font-bold text-emerald-400">${habitCompCount} times</td>
+                            <td class="py-3 px-4 font-bold text-white">${rate}%</td>
+                            <td class="py-3 px-4">${badge}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
+        }
+
+        function renderYearlyView() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            
+            const yLabel = document.getElementById('yearly-label');
+            if (yLabel) yLabel.textContent = `${currentYear} Overview`;
+
+            const yearLogs = trackerData.logs.filter(l => {
+                const d = parseLogDate(l['Date'] || l['date']);
+                const isComp = (l['Completed'] === true || l['Completed'] === 'TRUE' || l['Completed'] === 'true' || l['completed'] === true);
+                return d.getFullYear() === currentYear && isComp;
+            });
+
+            const yearlyCompTotal = yearLogs.length;
+            const yCounts = document.getElementById('yearly-counts');
+            if (yCounts) yCounts.textContent = `${yearlyCompTotal} YTD Completed`;
+
+            const yTotalEl = document.getElementById('yearly-total-completions');
+            if (yTotalEl) yTotalEl.textContent = yearlyCompTotal;
+
+            const yActiveEl = document.getElementById('yearly-active-habits');
+            if (yActiveEl) yActiveEl.textContent = trackerData.habits.length;
+
+            // Monthly counts across 12 months
+            const monthlyCounts = new Array(12).fill(0);
+            yearLogs.forEach(l => {
+                const d = parseLogDate(l['Date'] || l['date']);
+                const mIdx = d.getMonth();
+                if (mIdx >= 0 && mIdx < 12) {
+                    monthlyCounts[mIdx]++;
+                }
+            });
+
+            // Find peak month
+            let maxMIdx = 0;
+            let maxMVal = 0;
+            monthlyCounts.forEach((val, idx) => {
+                if (val > maxMVal) {
+                    maxMVal = val;
+                    maxMIdx = idx;
+                }
+            });
+
+            const peakMonthEl = document.getElementById('yearly-peak-month');
+            if (peakMonthEl) peakMonthEl.textContent = maxMVal > 0 ? monthNamesShort[maxMIdx] : "N/A";
+
+            const peakMonthCountEl = document.getElementById('yearly-peak-month-count');
+            if (peakMonthCountEl) peakMonthCountEl.textContent = `${maxMVal} completions`;
+
+            // Top habit
+            const habitCounts = {};
+            yearLogs.forEach(l => {
+                const name = String(l['Habit Name'] || l['Habit ID'] || l['name'] || '').trim();
+                if (name) habitCounts[name] = (habitCounts[name] || 0) + 1;
+            });
+
+            let topHabitName = "--";
+            let topHabitCount = 0;
+            Object.keys(habitCounts).forEach(hName => {
+                if (habitCounts[hName] > topHabitCount) {
+                    topHabitCount = habitCounts[hName];
+                    topHabitName = hName;
+                }
+            });
+
+            const topHabitEl = document.getElementById('yearly-top-habit');
+            if (topHabitEl) topHabitEl.textContent = topHabitName;
+
+            const topHabitCountEl = document.getElementById('yearly-top-habit-count');
+            if (topHabitCountEl) topHabitCountEl.textContent = `${topHabitCount} completions`;
+
+            // Yearly Ring calculation (estimate)
+            const daysSoFar = Math.ceil((now - new Date(currentYear, 0, 1)) / (1000 * 60 * 60 * 24));
+            const totalYearlyScheduled = Math.max(daysSoFar * trackerData.habits.length, 1);
+            const yearlyPct = Math.min(Math.round((yearlyCompTotal / totalYearlyScheduled) * 100), 100);
+
+            const yPctEl = document.getElementById('yearly-pct');
+            if (yPctEl) yPctEl.textContent = `${yearlyPct}%`;
+
+            const yRing = document.getElementById('yearly-ring');
+            if (yRing) yRing.style.strokeDashoffset = 238 - (238 * yearlyPct) / 100;
+
+            // 1. Render Yearly 12-Month Bar Chart
+            if (yearlyBarChartInstance) yearlyBarChartInstance.destroy();
+            const ctxYB = document.getElementById('yearlyTrendChart');
+            if (ctxYB) {
+                const maxY = Math.max(...monthlyCounts, 5);
+                yearlyBarChartInstance = new Chart(ctxYB.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: monthNamesShort,
+                        datasets: [{
+                            data: monthlyCounts,
+                            backgroundColor: '#06b6d4',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { display: false, min: 0, max: maxY + 1 },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Render Yearly Mindset Chart
+            if (yearlyMindsetChartInstance) yearlyMindsetChartInstance.destroy();
+            const ctxYM = document.getElementById('yearlyMindsetChart');
+            if (ctxYM) {
+                const yearMindsetLogs = trackerData.mindset.filter(m => {
+                    const d = parseLogDate(m['Date'] || m['date']);
+                    return d.getFullYear() === currentYear;
+                });
+
+                const mEnergySums = new Array(12).fill(0);
+                const mFocusSums = new Array(12).fill(0);
+                const mMotivSums = new Array(12).fill(0);
+                const mCounts = new Array(12).fill(0);
+
+                yearMindsetLogs.forEach(m => {
+                    const d = parseLogDate(m['Date'] || m['date']);
+                    const mIdx = d.getMonth();
+                    if (mIdx >= 0 && mIdx < 12) {
+                        mEnergySums[mIdx] += Number(m['Energy'] || 5);
+                        mFocusSums[mIdx] += Number(m['Focus'] || 5);
+                        mMotivSums[mIdx] += Number(m['Motivation'] || 5);
+                        mCounts[mIdx]++;
+                    }
+                });
+
+                const yEArr = mEnergySums.map((sum, i) => mCounts[i] > 0 ? Math.round(sum / mCounts[i]) : 5);
+                const yFArr = mFocusSums.map((sum, i) => mCounts[i] > 0 ? Math.round(sum / mCounts[i]) : 5);
+                const yMArr = mMotivSums.map((sum, i) => mCounts[i] > 0 ? Math.round(sum / mCounts[i]) : 5);
+
+                yearlyMindsetChartInstance = new Chart(ctxYM.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: monthNamesShort,
+                        datasets: [
+                            { label: 'Energy', data: yEArr, borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                            { label: 'Focus', data: yFArr, borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                            { label: 'Motivation', data: yMArr, borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { display: false, min: 0, max: 11 },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                        }
+                    }
+                });
+            }
+        }
+
+
         function initDates() {
             const today = new Date();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -322,6 +917,8 @@ let barChartInstance = null;
             renderDailyRings();
             renderDailyColumns();
             renderCharts();
+            renderMonthlyView();
+            renderYearlyView();
         }
 
         function renderStats() {
