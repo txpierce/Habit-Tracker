@@ -426,7 +426,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v33.0</span>
+        <span>Quiet Progress Habit & Task Tracker v34.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -989,7 +989,7 @@ let barChartInstance = null;
 
                     const rawHabits = result.habits || [];
                     trackerData.habits = rawHabits.filter(h => {
-                        const hUser = String(h['User ID'] || h['userId'] || h['User'] || h['user'] || '').trim().toLowerCase();
+                        const hUser = String(h['User ID'] || h['userId'] || h['User'] || h['user'] || h['user_id'] || h[''] || '').trim().toLowerCase();
                         if (hUser === activeUser) return true;
                         if (!hUser && activeUser === 'default user') return true;
                         return false;
@@ -997,7 +997,7 @@ let barChartInstance = null;
 
                     const rawTasks = result.tasks || [];
                     trackerData.tasks = rawTasks.filter(t => {
-                        const tUser = String(t['User ID'] || t['userId'] || t['User'] || t['user'] || '').trim().toLowerCase();
+                        const tUser = String(t['User ID'] || t['userId'] || t['User'] || t['user'] || t['user_id'] || t[''] || '').trim().toLowerCase();
                         if (tUser === activeUser) return true;
                         if (!tUser && activeUser === 'default user') return true;
                         return false;
@@ -1005,7 +1005,7 @@ let barChartInstance = null;
 
                     const rawLogs = result.logs || [];
                     trackerData.logs = rawLogs.filter(l => {
-                        const lUser = String(l['User ID'] || l['userId'] || l['User'] || l['user'] || '').trim().toLowerCase();
+                        const lUser = String(l['User ID'] || l['userId'] || l['User'] || l['user'] || l['user_id'] || l[''] || '').trim().toLowerCase();
                         if (lUser === activeUser) return true;
                         if (!lUser && activeUser === 'default user') return true;
                         return false;
@@ -1013,7 +1013,7 @@ let barChartInstance = null;
 
                     const rawMindset = result.mindset || [];
                     trackerData.mindset = rawMindset.filter(m => {
-                        const mUser = String(m['User ID'] || m['userId'] || m['User'] || m['user'] || '').trim().toLowerCase();
+                        const mUser = String(m['User ID'] || m['userId'] || m['User'] || m['user'] || m['user_id'] || m[''] || '').trim().toLowerCase();
                         if (mUser === activeUser) return true;
                         if (!mUser && activeUser === 'default user') return true;
                         return false;
