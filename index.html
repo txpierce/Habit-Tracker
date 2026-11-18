@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" href="data:,">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiet Progress - Habit & Task Tracker Dashboard</title>
@@ -425,7 +426,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v31.0</span>
+        <span>Quiet Progress Habit & Task Tracker v32.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -641,7 +642,7 @@ let barChartInstance = null;
                 } else {
                     const daysList = lowerTarget.split(',').map(s => s.trim());
                     for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-                        const dateObj = new Date(year, monthIndex, dayNum);
+                        const dateObj = new Date(currentYear, currentMonth, dayNum);
                         const dayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
                         const dayFull = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
                         if (daysList.some(d => d === dayShort || d === dayFull)) {
@@ -770,7 +771,7 @@ let barChartInstance = null;
                         } else {
                             const daysList = lowerTarget.split(',').map(s => s.trim());
                             for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-                                const dateObj = new Date(year, monthIndex, dayNum);
+                                const dateObj = new Date(currentYear, currentMonth, dayNum);
                                 const dayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
                                 const dayFull = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
                                 if (daysList.some(d => d === dayShort || d === dayFull)) {
