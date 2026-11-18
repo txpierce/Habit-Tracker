@@ -128,15 +128,22 @@
                     <input type="text" id="new-habit-category" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" placeholder="e.g. Health & Fitness">
                 </div>
                 <div>
-                    <label class="block text-xs text-slate-400 mb-2">Schedule Days of the Week</label>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs text-slate-400">Schedule Days of the Week</label>
+                        <div class="flex gap-2 text-xs">
+                            <button type="button" onclick="selectAllDays()" class="text-emerald-400 hover:underline cursor-pointer">Select All</button>
+                            <span class="text-slate-600">|</span>
+                            <button type="button" onclick="clearAllDays()" class="text-slate-400 hover:underline cursor-pointer">Clear</button>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-7 gap-1.5" id="day-selector">
-                        <button type="button" onclick="toggleDaySelection(this)" data-day="Sun" class="day-btn active py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white border border-emerald-500 shadow-md text-center cursor-pointer">Sun</button>
-                        <button type="button" onclick="toggleDaySelection(this)" data-day="Mon" class="day-btn active py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white border border-emerald-500 shadow-md text-center cursor-pointer">Mon</button>
-                        <button type="button" onclick="toggleDaySelection(this)" data-day="Tue" class="day-btn active py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white border border-emerald-500 shadow-md text-center cursor-pointer">Tue</button>
-                        <button type="button" onclick="toggleDaySelection(this)" data-day="Wed" class="day-btn active py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white border border-emerald-500 shadow-md text-center cursor-pointer">Wed</button>
-                        <button type="button" onclick="toggleDaySelection(this)" data-day="Thu" class="day-btn active py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white border border-emerald-500 shadow-md text-center cursor-pointer">Thu</button>
-                        <button type="button" onclick="toggleDaySelection(this)" data-day="Fri" class="day-btn active py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white border border-emerald-500 shadow-md text-center cursor-pointer">Fri</button>
-                        <button type="button" onclick="toggleDaySelection(this)" data-day="Sat" class="day-btn active py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white border border-emerald-500 shadow-md text-center cursor-pointer">Sat</button>
+                        <button type="button" onclick="toggleDaySelection(this)" data-day="Sun" class="day-btn py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 text-center cursor-pointer">Sun</button>
+                        <button type="button" onclick="toggleDaySelection(this)" data-day="Mon" class="day-btn py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 text-center cursor-pointer">Mon</button>
+                        <button type="button" onclick="toggleDaySelection(this)" data-day="Tue" class="day-btn py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 text-center cursor-pointer">Tue</button>
+                        <button type="button" onclick="toggleDaySelection(this)" data-day="Wed" class="day-btn py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 text-center cursor-pointer">Wed</button>
+                        <button type="button" onclick="toggleDaySelection(this)" data-day="Thu" class="day-btn py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 text-center cursor-pointer">Thu</button>
+                        <button type="button" onclick="toggleDaySelection(this)" data-day="Fri" class="day-btn py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 text-center cursor-pointer">Fri</button>
+                        <button type="button" onclick="toggleDaySelection(this)" data-day="Sat" class="day-btn py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 text-center cursor-pointer">Sat</button>
                     </div>
                 </div>
             </div>
@@ -148,7 +155,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v21.0</span>
+        <span>Quiet Progress Habit & Task Tracker v22.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -491,9 +498,20 @@ let barChartInstance = null;
         }
 
         function resetDaySelector() {
+            clearAllDays();
+        }
+
+        function selectAllDays() {
             document.querySelectorAll('#day-selector .day-btn').forEach(btn => {
                 btn.classList.add('active', 'bg-emerald-600', 'text-white', 'border-emerald-500', 'shadow-md');
                 btn.classList.remove('bg-slate-900', 'text-slate-400', 'border-slate-800');
+            });
+        }
+
+        function clearAllDays() {
+            document.querySelectorAll('#day-selector .day-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-emerald-600', 'text-white', 'border-emerald-500', 'shadow-md');
+                btn.classList.add('bg-slate-900', 'text-slate-400', 'border-slate-800');
             });
         }
 
