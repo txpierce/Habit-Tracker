@@ -425,7 +425,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v29.0</span>
+        <span>Quiet Progress Habit & Task Tracker v30.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -604,12 +604,14 @@ let barChartInstance = null;
             const queryStr = new URLSearchParams(params).toString();
             const fullUrl = `${WEB_APP_URL}?${queryStr}&_t=${Date.now()}`;
 
-            // Send single clean no-cors request (avoids 3x duplicate appending in Sheets)
-            fetch(fullUrl, { mode: 'no-cors', cache: 'no-cache' }).catch(err => {
-                // Fallback to image beacon only if fetch fails
-                const img = new Image();
-                img.src = fullUrl;
-            });
+            // 1. Image Beacon (Fires immediately, bypasses CORS restrictions on GET requests)
+            const img = new Image();
+            img.src = fullUrl;
+
+            // 2. Fetch No-CORS backup request
+            try {
+                fetch(fullUrl, { mode: 'no-cors', cache: 'no-cache' }).catch(() => {});
+            } catch (e) {}
         }
 
         
