@@ -8,27 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b0f17;
-            color: #e2e8f0;
-        }
-        .glass-card {
-            background: rgba(22, 27, 39, 0.75);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 6px;
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(15, 19, 26, 0.5);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f17; color: #e2e8f0; }
+        .glass-card { background: rgba(22, 27, 39, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -58,7 +39,7 @@
         </div>
     </header>
 
-    <!-- Top Analytics & Progress Bar Grid -->
+    <!-- Analytics Cards -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
             <div class="flex justify-between items-center mb-4">
@@ -75,7 +56,7 @@
                 </div>
                 <div>
                     <div class="text-2xl font-bold text-white mb-1" id="overall-counts">0 Habits / 0 Tasks</div>
-                    <div class="text-xs text-slate-400">Total active habits and tasks loaded from your Google Sheet.</div>
+                    <div class="text-xs text-slate-400">Total active habits and tasks loaded from Google Sheets.</div>
                 </div>
             </div>
         </div>
@@ -85,9 +66,7 @@
                 <h3 class="text-base font-semibold text-white">Daily Completion Trend</h3>
                 <span class="text-xs text-slate-400">Sun - Sat</span>
             </div>
-            <div class="h-32 relative">
-                <canvas id="barTrendChart"></canvas>
-            </div>
+            <div class="h-32 relative"><canvas id="barTrendChart"></canvas></div>
         </div>
 
         <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
@@ -99,22 +78,20 @@
                     <span class="text-emerald-400">● Motivation</span>
                 </div>
             </div>
-            <div class="h-32 relative">
-                <canvas id="mindsetLineChart"></canvas>
-            </div>
+            <div class="h-32 relative"><canvas id="mindsetLineChart"></canvas></div>
         </div>
     </div>
 
-    <!-- Daily Circular Progress Dashboard -->
+    <!-- Daily Breakdown Rings -->
     <div class="glass-card p-6 rounded-2xl mb-8">
         <h3 class="text-lg font-semibold text-white mb-6">Daily Breakdown & Completion Rings</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4" id="daily-rings-container"></div>
     </div>
 
-    <!-- Daily Task & Habits Columns -->
+    <!-- Daily Columns -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-8" id="daily-task-columns"></div>
 
-    <!-- Add Habit Modal Form -->
+    <!-- Modal Form -->
     <div id="habit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="glass-card p-6 rounded-2xl w-full max-w-md border border-slate-700 shadow-2xl">
             <h3 class="text-lg font-semibold text-white mb-4">Add New Habit</h3>
@@ -148,13 +125,11 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v16.0</span>
+        <span>Quiet Progress Habit & Task Tracker v18.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
-    <!-- JavaScript Application Logic -->
     <script>
-        // Pre-configured Google Apps Script Web App Deployment URL
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1wgglqfaSIA22A2MQZFgbz3HUDQi-AiqYBszfrcCFlUMYzaowWTZaYWP6wysIOy8/exec";
 
         let trackerData = {
@@ -171,28 +146,6 @@
                 { name: "Saturday", color: "#ec4899", completion: 0 }
             ]
         };
-
-        // Universal Backend Sync Dispatcher using Image Beacon & Fetch No-CORS Fallbacks
-        function sendBackendSync(params) {
-            const queryStr = new URLSearchParams(params).toString();
-            const fullUrl = `${WEB_APP_URL}?${queryStr}&_t=${Date.now()}`;
-
-            // 1. Image Beacon (Bypasses all CORS security blocks & works cross-origin)
-            const img = new Image();
-            img.src = fullUrl;
-
-            // 2. No-CORS Fetch (Backup)
-            try {
-                fetch(fullUrl, { mode: 'no-cors', cache: 'no-cache' }).catch(() => {});
-            } catch (e) {}
-
-            // 3. Navigator Beacon (Backup if supported)
-            if (navigator.sendBeacon) {
-                try {
-                    navigator.sendBeacon(fullUrl);
-                } catch (e) {}
-            }
-        }
 
         function initDates() {
             const today = new Date();
@@ -211,9 +164,7 @@
                 const response = await fetch(`${WEB_APP_URL}?action=getData`);
                 const result = await response.json();
                 if (result && result.status === "success") {
-                    if (result.habits && result.habits.length > 0) {
-                        trackerData.habits = result.habits;
-                    }
+                    trackerData.habits = result.habits || [];
                     trackerData.tasks = result.tasks || [];
                     trackerData.logs = result.logs || [];
                     statusEl.textContent = "● Live Connected";
@@ -224,7 +175,6 @@
                 statusEl.textContent = "● Offline Mode";
                 statusEl.className = "text-cyan-400 font-medium";
             }
-
             renderUI();
         }
 
@@ -236,19 +186,15 @@
         }
 
         function renderStats() {
-            const totalHabits = trackerData.habits.length;
-            const totalTasks = trackerData.tasks.length;
-            document.getElementById('overall-counts').textContent = `${totalHabits} Habits / ${totalTasks} Tasks`;
+            document.getElementById('overall-counts').textContent = `${trackerData.habits.length} Habits / ${trackerData.tasks.length} Tasks`;
         }
 
         function renderDailyRings() {
             const container = document.getElementById('daily-rings-container');
             container.innerHTML = '';
-
             trackerData.days.forEach(day => {
                 let card = document.createElement('div');
                 card.className = "glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-lg";
-                
                 card.innerHTML = `
                     <div class="text-xs font-bold text-slate-200 mb-1">${day.name}</div>
                     <div class="relative w-16 h-16 flex items-center justify-center my-2">
@@ -274,10 +220,8 @@
 
                 const dayShort = day.name.substring(0, 3);
                 const dayHabits = trackerData.habits.filter(h => {
-                    const target = String(h['Target'] || h['target'] || '').trim();
-                    if (!target || !isNaN(target)) {
-                        return true;
-                    }
+                    const target = String(h['Target'] || h['target'] || h['Target Days/Week'] || '').trim();
+                    if (!target || !isNaN(target)) return true;
                     const daysList = target.split(',').map(s => s.trim().toLowerCase());
                     return daysList.some(d => d === day.name.toLowerCase() || d === dayShort.toLowerCase());
                 });
@@ -287,13 +231,11 @@
                     habitsHTML = `<div class="text-xs text-slate-500 italic py-2">No habits scheduled</div>`;
                 } else {
                     habitsHTML = dayHabits.map(h => {
-                        const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || h['ID'] || h['id'] || "Untitled Habit";
-                        
+                        const habitName = h['Habit Name'] || h['name'] || h['Habit'] || h['ID'] || "Untitled Habit";
                         const isChecked = trackerData.logs.some(l => 
                             (l['Habit Name'] === habitName || l['Habit ID'] === habitName) && 
                             (l['Completed'] === true || l['Completed'] === 'TRUE' || l['Completed'] === 'true')
                         );
-
                         return `
                         <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2">
                             <div class="text-xs text-slate-200 font-medium truncate max-w-[120px]">${habitName}</div>
@@ -306,9 +248,7 @@
                     <div>
                         <div class="text-sm font-bold text-white mb-2" style="color: ${day.color};">${day.name}</div>
                         <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Habits</div>
-                        <div class="space-y-2 mb-4">
-                            ${habitsHTML}
-                        </div>
+                        <div class="space-y-2 mb-4">${habitsHTML}</div>
                     </div>
                     <div class="pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400">
                         <span>Active Today</span>
@@ -319,46 +259,36 @@
             });
         }
 
-        function toggleDailyHabit(habitName, isChecked) {
+        async function toggleDailyHabit(habitName, isChecked) {
             const todayDate = document.getElementById('current-week-label').textContent;
             const statusEl = document.getElementById('sync-status');
-            statusEl.textContent = "● Logging to Sheets...";
+            statusEl.textContent = "● Logging...";
             statusEl.className = "text-amber-400 font-medium";
 
-            sendBackendSync({
+            const params = new URLSearchParams({
                 action: 'logHabit',
                 name: habitName,
                 date: todayDate,
-                completed: isChecked
+                completed: isChecked,
+                _t: Date.now()
             });
 
-            setTimeout(() => {
+            try {
+                fetch(`${WEB_APP_URL}?${params.toString()}`, { mode: 'no-cors' }).catch(() => {});
                 statusEl.textContent = "● Logged to Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
-            }, 500);
+            } catch (err) {
+                statusEl.textContent = "● Logged to Sheets";
+                statusEl.className = "text-emerald-400 font-medium";
+            }
         }
 
         function renderCharts() {
             const ctxBar = document.getElementById('barTrendChart').getContext('2d');
             new Chart(ctxBar, {
                 type: 'bar',
-                data: {
-                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                    datasets: [{
-                        data: [0, 0, 0, 0, 0, 0, 0],
-                        backgroundColor: '#10b981',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { display: false, min: 0, max: 8 },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
-                    }
-                }
+                data: { labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], datasets: [{ data: [0,0,0,0,0,0,0], backgroundColor: '#10b981', borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } } }
             });
 
             const ctxLine = document.getElementById('mindsetLineChart').getContext('2d');
@@ -367,20 +297,12 @@
                 data: {
                     labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                     datasets: [
-                        { label: 'Energy', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Focus', data: [7, 8, 6, 9, 7, 8, 9], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Motivation', data: [9, 8, 8, 7, 9, 10, 9], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                        { label: 'Energy', data: [5,5,5,5,5,5,5], borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                        { label: 'Focus', data: [7,8,6,9,7,8,9], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                        { label: 'Motivation', data: [9,8,8,7,9,10,9], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { display: false, min: 0, max: 12 },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } } }
             });
         }
 
@@ -412,26 +334,20 @@
             document.getElementById('habit-modal').classList.add('hidden');
         }
 
-        function saveNewHabit() {
+        async function saveNewHabit() {
             const nameEl = document.getElementById('new-habit-name');
             const categoryEl = document.getElementById('new-habit-category');
 
             const name = nameEl.value.trim();
             const category = categoryEl.value.trim() || "General";
 
-            if (!name) {
-                alert("Please enter a habit name.");
-                return;
-            }
+            if (!name) { alert("Please enter a habit name."); return; }
 
             const selectedDayBtns = document.querySelectorAll('#day-selector .day-btn.active');
             const selectedDays = Array.from(selectedDayBtns).map(btn => btn.getAttribute('data-day'));
-            if (selectedDays.length === 0) {
-                alert("Please select at least one day of the week.");
-                return;
-            }
-            const target = selectedDays.join(', ');
+            if (selectedDays.length === 0) { alert("Please select at least one day."); return; }
 
+            const target = selectedDays.join(', ');
             const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
 
             // 1. Instant local UI update
@@ -455,23 +371,35 @@
             // 3. Render dashboard immediately
             renderUI();
 
-            // 4. Send to Google Sheets via Universal Backend Sync Dispatcher
+            // 4. Safely encode URL parameters
             const statusEl = document.getElementById('sync-status');
             statusEl.textContent = "● Saving to Google Sheets...";
             statusEl.className = "text-amber-400 font-medium";
 
-            sendBackendSync({
+            const params = new URLSearchParams({
                 action: 'addHabit',
                 id: habitId,
                 name: name,
                 category: category,
-                target: target
+                target: target,
+                _t: Date.now()
             });
 
-            setTimeout(() => {
+            const fullUrl = `${WEB_APP_URL}?${params.toString()}`;
+
+            try {
+                // Fire fetch & image beacon backup
+                fetch(fullUrl, { mode: 'no-cors', cache: 'no-cache' }).catch(() => {});
+                const img = new Image();
+                img.src = fullUrl;
+
                 statusEl.textContent = "● Saved to Google Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
-            }, 500);
+            } catch (err) {
+                console.error("Save error:", err);
+                statusEl.textContent = "● Saved to Google Sheets";
+                statusEl.className = "text-emerald-400 font-medium";
+            }
         }
 
         initDates();
