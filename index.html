@@ -148,7 +148,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v20.0</span>
+        <span>Quiet Progress Habit & Task Tracker v21.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -186,10 +186,12 @@
         }
 
         function isHabitCompleted(habitName) {
+            const todayDate = document.getElementById('current-week-label') ? document.getElementById('current-week-label').textContent : '';
             return trackerData.logs.some(l => {
                 const lName = String(l['Habit Name'] || l['Habit ID'] || l['name'] || '').trim();
                 const isComp = (l['Completed'] === true || l['Completed'] === 'TRUE' || l['Completed'] === 'true' || l['completed'] === true);
-                return lName.toLowerCase() === String(habitName).trim().toLowerCase() && isComp;
+                const isToday = !todayDate || String(l['Date'] || l['date'] || '').trim() === String(todayDate).trim();
+                return lName.toLowerCase() === String(habitName).trim().toLowerCase() && isComp && isToday;
             });
         }
 
@@ -200,18 +202,12 @@ let barChartInstance = null;
             const queryStr = new URLSearchParams(params).toString();
             const fullUrl = `${WEB_APP_URL}?${queryStr}&_t=${Date.now()}`;
 
-            const img = new Image();
-            img.src = fullUrl;
-
-            try {
-                fetch(fullUrl, { mode: 'no-cors', cache: 'no-cache' }).catch(() => {});
-            } catch (e) {}
-
-            if (navigator.sendBeacon) {
-                try {
-                    navigator.sendBeacon(fullUrl);
-                } catch (e) {}
-            }
+            // Send single clean no-cors request (avoids 3x duplicate appending in Sheets)
+            fetch(fullUrl, { mode: 'no-cors', cache: 'no-cache' }).catch(err => {
+                // Fallback to image beacon only if fetch fails
+                const img = new Image();
+                img.src = fullUrl;
+            });
         }
 
         function initDates() {
