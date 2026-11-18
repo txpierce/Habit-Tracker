@@ -425,7 +425,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v27.0</span>
+        <span>Quiet Progress Habit & Task Tracker v28.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -1083,10 +1083,21 @@ let barChartInstance = null;
                         
                         const isChecked = isHabitCompleted(habitName, day.name);
 
+                        const habitId = h['ID'] || h['id'] || '';
+                        const safeName = habitName.replace(/'/g, "\\'");
                         return `
-                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2">
-                            <div class="text-xs text-slate-200 font-medium truncate max-w-[120px]">${habitName}</div>
-                            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDailyHabit('${habitName}', this.checked, '${day.name}')" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
+                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between mb-2 group">
+                            <div class="flex items-center gap-1.5 truncate max-w-[100px]">
+                                <div class="text-xs text-slate-200 font-medium truncate" title="${habitName}">${habitName}</div>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <div class="flex items-center text-[10px] text-slate-400 gap-0.5">
+                                    <button onclick="moveHabitUp('${safeName}')" title="Move Up" class="p-0.5 hover:text-cyan-400 transition-colors cursor-pointer">▲</button>
+                                    <button onclick="moveHabitDown('${safeName}')" title="Move Down" class="p-0.5 hover:text-cyan-400 transition-colors cursor-pointer">▼</button>
+                                </div>
+                                <button onclick="deleteHabitCard('${safeName}', '${habitId}')" title="Delete Habit" class="text-xs text-slate-500 hover:text-red-400 transition-colors cursor-pointer px-0.5">🗑️</button>
+                                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleDailyHabit('${safeName}', this.checked, '${day.name}')" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-600 accent-emerald-500 cursor-pointer">
+                            </div>
                         </div>
                     `}).join('');
                 }
@@ -1160,7 +1171,66 @@ let barChartInstance = null;
             }, 500);
         }
 
-        function renderCharts() {
+                function moveHabitUp(habitName) {
+            const idx = trackerData.habits.findIndex(h => {
+                const name = String(h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || '').trim();
+                return name.toLowerCase() === String(habitName).trim().toLowerCase();
+            });
+            if (idx > 0) {
+                const temp = trackerData.habits[idx];
+                trackerData.habits[idx] = trackerData.habits[idx - 1];
+                trackerData.habits[idx - 1] = temp;
+                renderUI();
+            }
+        }
+
+        function moveHabitDown(habitName) {
+            const idx = trackerData.habits.findIndex(h => {
+                const name = String(h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || '').trim();
+                return name.toLowerCase() === String(habitName).trim().toLowerCase();
+            });
+            if (idx >= 0 && idx < trackerData.habits.length - 1) {
+                const temp = trackerData.habits[idx];
+                trackerData.habits[idx] = trackerData.habits[idx + 1];
+                trackerData.habits[idx + 1] = temp;
+                renderUI();
+            }
+        }
+
+        function deleteHabitCard(habitName, habitId) {
+            if (!confirm(`Are you sure you want to delete the habit "${habitName}"?`)) {
+                return;
+            }
+
+            trackerData.habits = trackerData.habits.filter(h => {
+                const name = String(h['Habit Name'] || h['name'] || h['Habit'] || h['Name'] || '').trim();
+                return name.toLowerCase() !== String(habitName).trim().toLowerCase();
+            });
+
+            renderUI();
+
+            const statusEl = document.getElementById('sync-status');
+            if (statusEl) {
+                statusEl.textContent = "● Deleting Habit...";
+                statusEl.className = "text-amber-400 font-medium";
+            }
+
+            sendBackendSync({
+                action: 'deleteHabit',
+                name: habitName,
+                id: habitId,
+                userId: currentUserId
+            });
+
+            setTimeout(() => {
+                if (statusEl) {
+                    statusEl.textContent = "● Habit Deleted";
+                    statusEl.className = "text-emerald-400 font-medium";
+                }
+            }, 500);
+        }
+
+function renderCharts() {
             if (barChartInstance) {
                 barChartInstance.destroy();
             }
