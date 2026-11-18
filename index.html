@@ -47,6 +47,14 @@
             <button onclick="openAddHabitModal()" class="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-900/40 flex items-center gap-2 cursor-pointer">
                 + Add Habit
             </button>
+            <div class="glass-card px-3 py-2.5 rounded-xl flex items-center gap-2 border border-purple-500/30 bg-purple-500/10">
+                <div class="text-xs text-purple-300 font-medium flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    User:
+                </div>
+                <select id="user-profile-select" onchange="handleUserSelectChange(this.value)" class="bg-slate-900 text-purple-300 font-bold text-xs rounded-lg px-2 py-1 border border-purple-500/40 focus:outline-none cursor-pointer">
+                </select>
+            </div>
             <div class="glass-card px-4 py-2.5 rounded-xl flex items-center gap-3 border border-emerald-500/30 bg-emerald-500/10">
                 <div class="text-xs text-slate-300 font-medium">Week Start Date</div>
                 <div class="text-sm font-bold text-emerald-400" id="current-week-label">--.--.----</div>
@@ -417,7 +425,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v25.0</span>
+        <span>Quiet Progress Habit & Task Tracker v26.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -482,6 +490,53 @@
             ]
         };
 
+        // Multi-User Profile State Management
+        let currentUserId = localStorage.getItem('quiet_progress_user') || 'Default User';
+        let userProfiles = JSON.parse(localStorage.getItem('quiet_progress_users_list') || '["Default User", "Alex", "Sam"]');
+
+        function renderUserSelectOptions() {
+            const selectEl = document.getElementById('user-profile-select');
+            if (!selectEl) return;
+            
+            if (!userProfiles.includes(currentUserId)) {
+                userProfiles.push(currentUserId);
+                localStorage.setItem('quiet_progress_users_list', JSON.stringify(userProfiles));
+            }
+            
+            selectEl.innerHTML = userProfiles.map(u => 
+                `<option value="${u}" ${u === currentUserId ? 'selected' : ''}>${u}</option>`
+            ).join('') + `<option value="__ADD_NEW__">+ Add New User...</option>`;
+        }
+
+        function handleUserSelectChange(val) {
+            if (val === '__ADD_NEW__') {
+                const name = prompt("Enter new User Name (e.g. Jordan):");
+                if (name && name.trim()) {
+                    const cleanName = name.trim();
+                    if (!userProfiles.includes(cleanName)) {
+                        userProfiles.push(cleanName);
+                        localStorage.setItem('quiet_progress_users_list', JSON.stringify(userProfiles));
+                    }
+                    currentUserId = cleanName;
+                } else {
+                    renderUserSelectOptions();
+                    return;
+                }
+            } else {
+                currentUserId = val;
+            }
+            localStorage.setItem('quiet_progress_user', currentUserId);
+            renderUserSelectOptions();
+            
+            // Clear local arrays for fresh user fetch
+            trackerData.habits = [];
+            trackerData.tasks = [];
+            trackerData.logs = [];
+            trackerData.mindset = [];
+            
+            loadGoogleSheetData();
+        }
+
         // Chart instance references to allow proper re-rendering without throwing Chart.js "Canvas in use" error
         
         function getHabitsForDay(dayName) {
@@ -516,6 +571,7 @@ let barChartInstance = null;
         let lineChartInstance = null;
 
         function sendBackendSync(params) {
+            params.userId = currentUserId;
             const queryStr = new URLSearchParams(params).toString();
             const fullUrl = `${WEB_APP_URL}?${queryStr}&_t=${Date.now()}`;
 
@@ -883,29 +939,28 @@ let barChartInstance = null;
             const dd = String(today.getDate()).padStart(2, '0');
             const yyyy = today.getFullYear();
             document.getElementById('current-week-label').textContent = `${mm}.${dd}.${yyyy}`;
+            renderUserSelectOptions();
         }
 
         async function loadGoogleSheetData() {
             const statusEl = document.getElementById('sync-status');
-            statusEl.textContent = "● Syncing...";
+            statusEl.textContent = `● Syncing (${currentUserId})...`;
             statusEl.className = "text-amber-400 font-medium";
 
             try {
-                const response = await fetch(`${WEB_APP_URL}?action=getData`);
+                const response = await fetch(`${WEB_APP_URL}?action=getData&userId=${encodeURIComponent(currentUserId)}`);
                 const result = await response.json();
                 if (result && result.status === "success") {
-                    if (result.habits && result.habits.length > 0) {
-                        trackerData.habits = result.habits;
-                    }
+                    trackerData.habits = result.habits || [];
                     trackerData.tasks = result.tasks || [];
                     trackerData.logs = result.logs || [];
                     trackerData.mindset = result.mindset || [];
-                    statusEl.textContent = "● Live Connected";
+                    statusEl.textContent = `● Live Connected (${currentUserId})`;
                     statusEl.className = "text-emerald-400 font-medium";
                 }
             } catch (err) {
                 console.warn("Offline mode or fetch fallback:", err);
-                statusEl.textContent = "● Offline Mode";
+                statusEl.textContent = `● Offline Mode (${currentUserId})`;
                 statusEl.className = "text-cyan-400 font-medium";
             }
 
