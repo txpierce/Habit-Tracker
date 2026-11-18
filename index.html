@@ -148,7 +148,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v11.0</span>
+        <span>Quiet Progress Habit & Task Tracker v12.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -171,6 +171,51 @@
             ]
         };
 
+        // Central JSONP / Network Helper - Guarantees delivery to Google Apps Script across all origins & security modes
+        function callGAS(params) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                params.callback = callbackName;
+
+                const queryString = Object.keys(params)
+                    .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+                    .join('&');
+
+                const script = document.createElement('script');
+                script.id = callbackName;
+
+                let timeout = setTimeout(() => {
+                    cleanup();
+                    // Fallback to fetch if script tag timed out
+                    fetch(`${WEB_APP_URL}?${queryString}`, { mode: 'no-cors' })
+                        .then(() => resolve({ status: "success", fallback: true }))
+                        .catch(err => reject(err));
+                }, 7000);
+
+                function cleanup() {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    const el = document.getElementById(callbackName);
+                    if (el) el.remove();
+                }
+
+                window[callbackName] = function(response) {
+                    cleanup();
+                    resolve(response);
+                };
+
+                script.onerror = function(err) {
+                    cleanup();
+                    fetch(`${WEB_APP_URL}?${queryString}`, { mode: 'no-cors' })
+                        .then(() => resolve({ status: "success", fallback: true }))
+                        .catch(e => reject(e));
+                };
+
+                script.src = `${WEB_APP_URL}?${queryString}`;
+                document.body.appendChild(script);
+            });
+        }
+
         function initDates() {
             const today = new Date();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -185,9 +230,8 @@
             statusEl.className = "text-amber-400 font-medium";
 
             try {
-                const response = await fetch(`${WEB_APP_URL}?action=getData`);
-                const result = await response.json();
-                if (result.status === "success") {
+                const result = await callGAS({ action: 'getData' });
+                if (result && result.status === "success") {
                     if (result.habits && result.habits.length > 0) {
                         trackerData.habits = result.habits;
                     }
@@ -302,16 +346,16 @@
             statusEl.textContent = "● Logging...";
             statusEl.className = "text-amber-400 font-medium";
 
-            const logUrl = `${WEB_APP_URL}?action=logHabit&name=${encodeURIComponent(habitName)}&date=${encodeURIComponent(todayDate)}&completed=${isChecked}`;
-            
             try {
-                await fetch(logUrl, { mode: 'no-cors' });
+                await callGAS({
+                    action: 'logHabit',
+                    name: habitName,
+                    date: todayDate,
+                    completed: isChecked
+                });
                 statusEl.textContent = "● Logged to Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
             } catch (err) {
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon(logUrl);
-                }
                 statusEl.textContent = "● Logged to Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
             }
@@ -413,7 +457,7 @@
 
             const habitId = "H-" + String(trackerData.habits.length + 1).padStart(3, '0');
 
-            // 1. Instant local UI update so screen updates with zero lag
+            // 1. Instant local UI update
             trackerData.habits.push({
                 'ID': habitId,
                 'Habit Name': name,
@@ -434,26 +478,26 @@
             // 3. Render dashboard immediately
             renderUI();
 
-            // 4. Send to Google Sheets backend
+            // 4. Send to Google Sheets via JSONP
             const statusEl = document.getElementById('sync-status');
             statusEl.textContent = "● Saving to Google Sheets...";
             statusEl.className = "text-amber-400 font-medium";
 
-            const addUrl = `${WEB_APP_URL}?action=addHabit&id=${encodeURIComponent(habitId)}&name=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&target=${encodeURIComponent(target)}`;
-
             try {
-                // Fire no-cors GET fetch - guarantees network delivery to Apps Script even from file:// or local origins
-                await fetch(addUrl, { mode: 'no-cors' });
+                const res = await callGAS({
+                    action: 'addHabit',
+                    id: habitId,
+                    name: name,
+                    category: category,
+                    target: target
+                });
                 statusEl.textContent = "● Saved to Google Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
-                console.log("Habit request dispatched to Google Sheets backend!");
+                console.log("Habit saved to Google Sheets!", res);
             } catch (err) {
-                console.error("Fetch failed, using sendBeacon fallback:", err);
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon(addUrl);
-                }
-                statusEl.textContent = "● Saved to Google Sheets";
-                statusEl.className = "text-emerald-400 font-medium";
+                console.error("Save failed:", err);
+                statusEl.textContent = "● Save Error";
+                statusEl.className = "text-rose-400 font-medium";
             }
         }
 
