@@ -425,7 +425,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v28.0</span>
+        <span>Quiet Progress Habit & Task Tracker v29.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -554,15 +554,29 @@
 
         // Chart instance references to allow proper re-rendering without throwing Chart.js "Canvas in use" error
         
+        function getHabitTarget(h) {
+            if (!h) return '';
+            const keys = Object.keys(h);
+            const targetKey = keys.find(k => {
+                const lower = k.trim().toLowerCase();
+                return lower === 'target' || lower.includes('target') || lower === 'days' || lower === 'schedule';
+            });
+            return targetKey ? String(h[targetKey] || '').trim() : String(h['Target'] || h['target'] || '').trim();
+        }
+
         function getHabitsForDay(dayName) {
-            const dayShort = dayName.substring(0, 3);
+            const dayShort = dayName.substring(0, 3).toLowerCase();
+            const dayFull = dayName.toLowerCase();
+
             return trackerData.habits.filter(h => {
-                const target = String(h['Target'] || h['target'] || '').trim();
-                if (!target || !isNaN(target)) {
+                const target = getHabitTarget(h);
+                if (!target) return true;
+                const lowerTarget = target.toLowerCase();
+                if (lowerTarget === 'daily' || lowerTarget === 'all' || lowerTarget === 'everyday') {
                     return true;
                 }
-                const daysList = target.split(',').map(s => s.trim().toLowerCase());
-                return daysList.some(d => d === dayName.toLowerCase() || d === dayShort.toLowerCase());
+                const daysList = lowerTarget.split(',').map(s => s.trim());
+                return daysList.some(d => d === dayFull || d === dayShort);
             });
         }
 
@@ -618,16 +632,17 @@ let barChartInstance = null;
             // Calculate total scheduled habit slots in month
             let totalMonthlyScheduled = 0;
             trackerData.habits.forEach(h => {
-                const target = String(h['Target'] || h['target'] || '').trim();
-                if (!target || !isNaN(target)) {
+                const target = getHabitTarget(h);
+                const lowerTarget = target.toLowerCase();
+                if (!target || lowerTarget === 'daily' || lowerTarget === 'all' || lowerTarget === 'everyday') {
                     totalMonthlyScheduled += daysInMonth;
                 } else {
-                    const daysList = target.split(',').map(s => s.trim().toLowerCase());
+                    const daysList = lowerTarget.split(',').map(s => s.trim());
                     for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-                        const dateObj = new Date(currentYear, currentMonth, dayNum);
-                        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                        const dateObj = new Date(year, monthIndex, dayNum);
                         const dayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
-                        if (daysList.some(d => d === dayName || d === dayShort)) {
+                        const dayFull = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                        if (daysList.some(d => d === dayShort || d === dayFull)) {
                             totalMonthlyScheduled++;
                         }
                     }
@@ -747,15 +762,16 @@ let barChartInstance = null;
                         }).length;
 
                         let habitScheduled = 0;
-                        const daysList = target.split(',').map(s => s.trim().toLowerCase());
-                        if (!target || target.toLowerCase() === 'daily' || !isNaN(target)) {
+                        const lowerTarget = target.toLowerCase();
+                        if (!target || lowerTarget === 'daily' || lowerTarget === 'all' || lowerTarget === 'everyday') {
                             habitScheduled = daysInMonth;
                         } else {
+                            const daysList = lowerTarget.split(',').map(s => s.trim());
                             for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-                                const dateObj = new Date(currentYear, currentMonth, dayNum);
-                                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                                const dateObj = new Date(year, monthIndex, dayNum);
                                 const dayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
-                                if (daysList.some(d => d === dayName || d === dayShort)) {
+                                const dayFull = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                                if (daysList.some(d => d === dayShort || d === dayFull)) {
                                     habitScheduled++;
                                 }
                             }
@@ -1065,14 +1081,7 @@ let barChartInstance = null;
                 col.className = "glass-card p-4 rounded-2xl flex flex-col justify-between border border-slate-800 min-h-[220px]";
 
                 const dayShort = day.name.substring(0, 3);
-                const dayHabits = trackerData.habits.filter(h => {
-                    const target = String(h['Target'] || h['target'] || '').trim();
-                    if (!target || !isNaN(target)) {
-                        return true;
-                    }
-                    const daysList = target.split(',').map(s => s.trim().toLowerCase());
-                    return daysList.some(d => d === day.name.toLowerCase() || d === dayShort.toLowerCase());
-                });
+                const dayHabits = getHabitsForDay(day.name);
 
                 let habitsHTML = '';
                 if (dayHabits.length === 0) {
