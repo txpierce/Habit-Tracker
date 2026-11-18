@@ -425,7 +425,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v30.0</span>
+        <span>Quiet Progress Habit & Task Tracker v31.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -1502,7 +1502,9 @@ function renderCharts() {
                 'category': category,
                 'Target': target,
                 'target': target,
-                'Completed': false
+                'Completed': false,
+                'User ID': currentUserId,
+                'userId': currentUserId
             });
 
             // 2. Clear inputs & close modal
