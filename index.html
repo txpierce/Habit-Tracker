@@ -425,7 +425,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v26.0</span>
+        <span>Quiet Progress Habit & Task Tracker v27.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -492,7 +492,7 @@
 
         // Multi-User Profile State Management
         let currentUserId = localStorage.getItem('quiet_progress_user') || 'Default User';
-        let userProfiles = JSON.parse(localStorage.getItem('quiet_progress_users_list') || '["Default User", "Alex", "Sam"]');
+        let userProfiles = JSON.parse(localStorage.getItem('quiet_progress_users_list') || '["Default User"]');
 
         function renderUserSelectOptions() {
             const selectEl = document.getElementById('user-profile-select');
@@ -505,7 +505,7 @@
             
             selectEl.innerHTML = userProfiles.map(u => 
                 `<option value="${u}" ${u === currentUserId ? 'selected' : ''}>${u}</option>`
-            ).join('') + `<option value="__ADD_NEW__">+ Add New User...</option>`;
+            ).join('') + `<option value="__ADD_NEW__">+ Add New User...</option><option value="__REMOVE_USER__">🗑️ Remove Profile...</option>`;
         }
 
         function handleUserSelectChange(val) {
@@ -522,6 +522,21 @@
                     renderUserSelectOptions();
                     return;
                 }
+            } else if (val === '__REMOVE_USER__') {
+                const nameToRemove = prompt("Enter the exact profile name to remove (e.g. Alex or Sam):");
+                if (nameToRemove && nameToRemove.trim()) {
+                    const clean = nameToRemove.trim();
+                    userProfiles = userProfiles.filter(u => u.toLowerCase() !== clean.toLowerCase());
+                    if (userProfiles.length === 0) userProfiles = ['Default User'];
+                    if (currentUserId.toLowerCase() === clean.toLowerCase()) {
+                        currentUserId = userProfiles[0];
+                    }
+                    localStorage.setItem('quiet_progress_users_list', JSON.stringify(userProfiles));
+                    localStorage.setItem('quiet_progress_user', currentUserId);
+                }
+                renderUserSelectOptions();
+                loadGoogleSheetData();
+                return;
             } else {
                 currentUserId = val;
             }
