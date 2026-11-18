@@ -92,7 +92,10 @@
 
         <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="text-base font-semibold text-white">Mindset & Energy</h3>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base font-semibold text-white">Mindset & Energy</h3>
+                    <button onclick="openMindsetModal()" class="px-2.5 py-1 text-xs font-semibold bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 border border-pink-500/30 rounded-lg transition-all cursor-pointer flex items-center gap-1">+ Log Scores</button>
+                </div>
                 <div class="flex items-center gap-2 text-[10px]">
                     <span class="text-pink-400">● Energy</span>
                     <span class="text-cyan-400">● Focus</span>
@@ -113,6 +116,61 @@
 
     <!-- Daily Task & Habits Columns -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-8" id="daily-task-columns"></div>
+
+    
+    <!-- Log Mindset & Energy Modal Form -->
+    <div id="mindset-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="glass-card p-6 rounded-2xl w-full max-w-md border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-white">Log Mindset & Energy</h3>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-500/20 text-pink-400 border border-pink-500/30">Scale 1-10</span>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Select Day of Week</label>
+                    <select id="mindset-day-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-pink-500 cursor-pointer">
+                        <option value="Sunday">Sunday</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                    </select>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-medium text-pink-400">⚡ Energy Level</label>
+                        <span id="energy-val-badge" class="px-2 py-0.5 rounded text-xs bg-pink-500/20 text-pink-400 font-bold border border-pink-500/30">5 / 10</span>
+                    </div>
+                    <input type="range" id="mindset-energy-slider" min="1" max="10" value="5" oninput="document.getElementById('energy-val-badge').textContent=this.value+' / 10'" class="w-full accent-pink-500 cursor-pointer">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-medium text-cyan-400">🎯 Focus Level</label>
+                        <span id="focus-val-badge" class="px-2 py-0.5 rounded text-xs bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">5 / 10</span>
+                    </div>
+                    <input type="range" id="mindset-focus-slider" min="1" max="10" value="5" oninput="document.getElementById('focus-val-badge').textContent=this.value+' / 10'" class="w-full accent-cyan-500 cursor-pointer">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-medium text-emerald-400">🔥 Motivation Level</label>
+                        <span id="motivation-val-badge" class="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">5 / 10</span>
+                    </div>
+                    <input type="range" id="mindset-motivation-slider" min="1" max="10" value="5" oninput="document.getElementById('motivation-val-badge').textContent=this.value+' / 10'" class="w-full accent-emerald-500 cursor-pointer">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeMindsetModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold cursor-pointer">Cancel</button>
+                <button onclick="saveMindsetScores()" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-sm font-semibold cursor-pointer shadow-lg shadow-pink-900/40">Save Mindset</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Add Habit Modal Form -->
     <div id="habit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
@@ -155,7 +213,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v23.0</span>
+        <span>Quiet Progress Habit & Task Tracker v24.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -167,6 +225,7 @@
             habits: [],
             tasks: [],
             logs: [],
+            mindset: [],
             days: [
                 { name: "Sunday", color: "#8b5cf6", completion: 0 },
                 { name: "Monday", color: "#3b82f6", completion: 0 },
@@ -245,6 +304,7 @@ let barChartInstance = null;
                     }
                     trackerData.tasks = result.tasks || [];
                     trackerData.logs = result.logs || [];
+                    trackerData.mindset = result.mindset || [];
                     statusEl.textContent = "● Live Connected";
                     statusEl.className = "text-emerald-400 font-medium";
                 }
@@ -477,15 +537,39 @@ let barChartInstance = null;
                 }
             });
 
+            const energySeries = [];
+            const focusSeries = [];
+            const motivationSeries = [];
+
+            trackerData.days.forEach(day => {
+                const dayShort = day.name.substring(0, 3).toLowerCase();
+                const dayLower = day.name.toLowerCase();
+
+                const mEntry = trackerData.mindset.find(m => {
+                    const mDay = String(m['Day'] || m['day'] || '').trim().toLowerCase();
+                    return mDay === dayLower || mDay === dayShort;
+                });
+
+                if (mEntry) {
+                    energySeries.push(Number(mEntry['Energy'] || mEntry['energy'] || 5));
+                    focusSeries.push(Number(mEntry['Focus'] || mEntry['focus'] || 5));
+                    motivationSeries.push(Number(mEntry['Motivation'] || mEntry['motivation'] || 5));
+                } else {
+                    energySeries.push(5);
+                    focusSeries.push(5);
+                    motivationSeries.push(5);
+                }
+            });
+
             const ctxLine = document.getElementById('mindsetLineChart').getContext('2d');
             lineChartInstance = new Chart(ctxLine, {
                 type: 'line',
                 data: {
                     labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                     datasets: [
-                        { label: 'Energy', data: [5, 5, 5, 5, 5, 5, 5], borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Focus', data: [7, 8, 6, 9, 7, 8, 9], borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 0 },
-                        { label: 'Motivation', data: [9, 8, 8, 7, 9, 10, 9], borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 0 }
+                        { label: 'Energy', data: energySeries, borderColor: '#ec4899', borderWidth: 2, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#ec4899' },
+                        { label: 'Focus', data: focusSeries, borderColor: '#06b6d4', borderWidth: 2, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#06b6d4' },
+                        { label: 'Motivation', data: motivationSeries, borderColor: '#10b981', borderWidth: 2, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#10b981' }
                     ]
                 },
                 options: {
@@ -526,6 +610,106 @@ let barChartInstance = null;
                 btn.classList.remove('active', 'bg-emerald-600', 'text-white', 'border-emerald-500', 'shadow-md');
                 btn.classList.add('bg-slate-900', 'text-slate-400', 'border-slate-800');
             });
+        }
+
+        
+        function openMindsetModal() {
+            const todayIndex = new Date().getDay(); // 0=Sun, 1=Mon...
+            const daysNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const currentDayName = daysNames[todayIndex];
+
+            const daySelect = document.getElementById('mindset-day-select');
+            if (daySelect) daySelect.value = currentDayName;
+
+            // Load existing mindset score if present for current day
+            const existing = trackerData.mindset.find(m => {
+                const mDay = String(m['Day'] || m['day'] || '').trim().toLowerCase();
+                return mDay === currentDayName.toLowerCase() || mDay === currentDayName.substring(0,3).toLowerCase();
+            });
+
+            const eVal = existing ? Number(existing['Energy'] || existing['energy'] || 5) : 5;
+            const fVal = existing ? Number(existing['Focus'] || existing['focus'] || 5) : 5;
+            const mVal = existing ? Number(existing['Motivation'] || existing['motivation'] || 5) : 5;
+
+            document.getElementById('mindset-energy-slider').value = eVal;
+            document.getElementById('energy-val-badge').textContent = eVal + ' / 10';
+
+            document.getElementById('mindset-focus-slider').value = fVal;
+            document.getElementById('focus-val-badge').textContent = fVal + ' / 10';
+
+            document.getElementById('mindset-motivation-slider').value = mVal;
+            document.getElementById('motivation-val-badge').textContent = mVal + ' / 10';
+
+            document.getElementById('mindset-modal').classList.remove('hidden');
+            document.getElementById('mindset-modal').classList.add('flex');
+        }
+
+        function closeMindsetModal() {
+            document.getElementById('mindset-modal').classList.remove('flex');
+            document.getElementById('mindset-modal').classList.add('hidden');
+        }
+
+        function saveMindsetScores() {
+            const daySelect = document.getElementById('mindset-day-select');
+            const selectedDay = daySelect ? daySelect.value : "Monday";
+            const todayDate = document.getElementById('current-week-label') ? document.getElementById('current-week-label').textContent : '';
+
+            const energyVal = Number(document.getElementById('mindset-energy-slider').value);
+            const focusVal = Number(document.getElementById('mindset-focus-slider').value);
+            const motivationVal = Number(document.getElementById('mindset-motivation-slider').value);
+
+            // 1. Update in-memory trackerData.mindset
+            let existingEntry = trackerData.mindset.find(m => {
+                const mDay = String(m['Day'] || m['day'] || '').trim().toLowerCase();
+                return mDay === selectedDay.toLowerCase() || mDay === selectedDay.substring(0,3).toLowerCase();
+            });
+
+            if (existingEntry) {
+                existingEntry['Energy'] = energyVal;
+                existingEntry['energy'] = energyVal;
+                existingEntry['Focus'] = focusVal;
+                existingEntry['focus'] = focusVal;
+                existingEntry['Motivation'] = motivationVal;
+                existingEntry['motivation'] = motivationVal;
+            } else {
+                trackerData.mindset.push({
+                    'Date': todayDate,
+                    'Day': selectedDay,
+                    'day': selectedDay,
+                    'Energy': energyVal,
+                    'energy': energyVal,
+                    'Focus': focusVal,
+                    'focus': focusVal,
+                    'Motivation': motivationVal,
+                    'motivation': motivationVal
+                });
+            }
+
+            closeMindsetModal();
+            renderUI();
+
+            // 2. Dispatch backend sync
+            const statusEl = document.getElementById('sync-status');
+            if (statusEl) {
+                statusEl.textContent = "● Logging Mindset...";
+                statusEl.className = "text-amber-400 font-medium";
+            }
+
+            sendBackendSync({
+                action: 'logMindset',
+                date: todayDate,
+                day: selectedDay,
+                energy: energyVal,
+                focus: focusVal,
+                motivation: motivationVal
+            });
+
+            setTimeout(() => {
+                if (statusEl) {
+                    statusEl.textContent = "● Mindset Logged";
+                    statusEl.className = "text-emerald-400 font-medium";
+                }
+            }, 500);
         }
 
         function openAddHabitModal() {
