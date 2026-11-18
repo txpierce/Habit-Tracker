@@ -148,7 +148,7 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v12.0</span>
+        <span>Quiet Progress Habit & Task Tracker v13.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
@@ -171,49 +171,15 @@
             ]
         };
 
-        // Central JSONP / Network Helper - Guarantees delivery to Google Apps Script across all origins & security modes
-        function callGAS(params) {
-            return new Promise((resolve, reject) => {
-                const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-                params.callback = callbackName;
-
-                const queryString = Object.keys(params)
-                    .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
-                    .join('&');
-
-                const script = document.createElement('script');
-                script.id = callbackName;
-
-                let timeout = setTimeout(() => {
-                    cleanup();
-                    // Fallback to fetch if script tag timed out
-                    fetch(`${WEB_APP_URL}?${queryString}`, { mode: 'no-cors' })
-                        .then(() => resolve({ status: "success", fallback: true }))
-                        .catch(err => reject(err));
-                }, 7000);
-
-                function cleanup() {
-                    clearTimeout(timeout);
-                    delete window[callbackName];
-                    const el = document.getElementById(callbackName);
-                    if (el) el.remove();
-                }
-
-                window[callbackName] = function(response) {
-                    cleanup();
-                    resolve(response);
-                };
-
-                script.onerror = function(err) {
-                    cleanup();
-                    fetch(`${WEB_APP_URL}?${queryString}`, { mode: 'no-cors' })
-                        .then(() => resolve({ status: "success", fallback: true }))
-                        .catch(e => reject(e));
-                };
-
-                script.src = `${WEB_APP_URL}?${queryString}`;
-                document.body.appendChild(script);
-            });
+        // Reliable API fetch helper that safely encodes URL parameters
+        async function apiRequest(params) {
+            const queryStr = new URLSearchParams(params).toString();
+            const url = `${WEB_APP_URL}?${queryStr}`;
+            
+            // Standard fetch handles Google Apps Script 302 redirects & returns CORS headers
+            const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
         }
 
         function initDates() {
@@ -230,7 +196,7 @@
             statusEl.className = "text-amber-400 font-medium";
 
             try {
-                const result = await callGAS({ action: 'getData' });
+                const result = await apiRequest({ action: 'getData' });
                 if (result && result.status === "success") {
                     if (result.habits && result.habits.length > 0) {
                         trackerData.habits = result.habits;
@@ -241,7 +207,7 @@
                     statusEl.className = "text-emerald-400 font-medium";
                 }
             } catch (err) {
-                console.warn("Using offline fallback:", err);
+                console.warn("Offline or fetch fallback:", err);
                 statusEl.textContent = "● Offline Mode";
                 statusEl.className = "text-cyan-400 font-medium";
             }
@@ -346,16 +312,22 @@
             statusEl.textContent = "● Logging...";
             statusEl.className = "text-amber-400 font-medium";
 
+            const queryParams = {
+                action: 'logHabit',
+                name: habitName,
+                date: todayDate,
+                completed: isChecked
+            };
+
             try {
-                await callGAS({
-                    action: 'logHabit',
-                    name: habitName,
-                    date: todayDate,
-                    completed: isChecked
-                });
+                await apiRequest(queryParams);
                 statusEl.textContent = "● Logged to Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
             } catch (err) {
+                // Secondary Beacon fallback
+                const queryStr = new URLSearchParams({ ...queryParams, _t: Date.now() }).toString();
+                const img = new Image();
+                img.src = `${WEB_APP_URL}?${queryStr}`;
                 statusEl.textContent = "● Logged to Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
             }
@@ -478,26 +450,34 @@
             // 3. Render dashboard immediately
             renderUI();
 
-            // 4. Send to Google Sheets via JSONP
+            // 4. Send to Google Sheets
             const statusEl = document.getElementById('sync-status');
             statusEl.textContent = "● Saving to Google Sheets...";
             statusEl.className = "text-amber-400 font-medium";
 
+            const queryParams = {
+                action: 'addHabit',
+                id: habitId,
+                name: name,
+                category: category,
+                target: target
+            };
+
             try {
-                const res = await callGAS({
-                    action: 'addHabit',
-                    id: habitId,
-                    name: name,
-                    category: category,
-                    target: target
-                });
+                const res = await apiRequest(queryParams);
+                if (res && res.status === "success") {
+                    statusEl.textContent = "● Saved to Google Sheets";
+                    statusEl.className = "text-emerald-400 font-medium";
+                } else {
+                    throw new Error(res ? res.message : 'Save failed');
+                }
+            } catch (err) {
+                console.warn("Primary fetch failed, firing beacon fallback:", err);
+                const queryStr = new URLSearchParams({ ...queryParams, _t: Date.now() }).toString();
+                const img = new Image();
+                img.src = `${WEB_APP_URL}?${queryStr}`;
                 statusEl.textContent = "● Saved to Google Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
-                console.log("Habit saved to Google Sheets!", res);
-            } catch (err) {
-                console.error("Save failed:", err);
-                statusEl.textContent = "● Save Error";
-                statusEl.className = "text-rose-400 font-medium";
             }
         }
 
