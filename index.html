@@ -33,20 +33,6 @@
 </head>
 <body class="min-h-screen p-4 md:p-8">
 
-    <!-- Hidden Iframe to handle background form submissions without CORS blocking -->
-    <iframe name="hidden_sync_iframe" id="hidden_sync_iframe" style="display:none;"></iframe>
-
-    <!-- Hidden Form for Bulletproof Sync -->
-    <form id="hidden-sync-form" action="" method="GET" target="hidden_sync_iframe" style="display:none;">
-        <input type="hidden" name="action" id="form-action" value="addHabit">
-        <input type="hidden" name="id" id="form-id" value="">
-        <input type="hidden" name="name" id="form-name" value="">
-        <input type="hidden" name="category" id="form-category" value="">
-        <input type="hidden" name="target" id="form-target" value="">
-        <input type="hidden" name="date" id="form-date" value="">
-        <input type="hidden" name="completed" id="form-completed" value="">
-    </form>
-
     <!-- Header / Title Bar -->
     <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 glass-card p-6 rounded-2xl shadow-2xl">
         <div>
@@ -162,13 +148,13 @@
     </div>
 
     <footer class="glass-card p-4 rounded-xl text-center text-xs text-slate-400 flex justify-between items-center">
-        <span>Quiet Progress Habit & Task Tracker v15.0</span>
+        <span>Quiet Progress Habit & Task Tracker v16.0</span>
         <span class="text-emerald-400 font-medium">Google Apps Script Web App Active</span>
     </footer>
 
     <!-- JavaScript Application Logic -->
     <script>
-        // Replace this URL with YOUR exact Google Apps Script Web App URL ending in /exec
+        // Pre-configured Google Apps Script Web App Deployment URL
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz1wgglqfaSIA22A2MQZFgbz3HUDQi-AiqYBszfrcCFlUMYzaowWTZaYWP6wysIOy8/exec";
 
         let trackerData = {
@@ -185,6 +171,28 @@
                 { name: "Saturday", color: "#ec4899", completion: 0 }
             ]
         };
+
+        // Universal Backend Sync Dispatcher using Image Beacon & Fetch No-CORS Fallbacks
+        function sendBackendSync(params) {
+            const queryStr = new URLSearchParams(params).toString();
+            const fullUrl = `${WEB_APP_URL}?${queryStr}&_t=${Date.now()}`;
+
+            // 1. Image Beacon (Bypasses all CORS security blocks & works cross-origin)
+            const img = new Image();
+            img.src = fullUrl;
+
+            // 2. No-CORS Fetch (Backup)
+            try {
+                fetch(fullUrl, { mode: 'no-cors', cache: 'no-cache' }).catch(() => {});
+            } catch (e) {}
+
+            // 3. Navigator Beacon (Backup if supported)
+            if (navigator.sendBeacon) {
+                try {
+                    navigator.sendBeacon(fullUrl);
+                } catch (e) {}
+            }
+        }
 
         function initDates() {
             const today = new Date();
@@ -311,29 +319,13 @@
             });
         }
 
-        // Send backend updates via Hidden Form Submission (Zero CORS restrictions across all environments)
-        function sendFormSync(params) {
-            const form = document.getElementById('hidden-sync-form');
-            form.action = WEB_APP_URL;
-
-            document.getElementById('form-action').value = params.action || '';
-            document.getElementById('form-id').value = params.id || '';
-            document.getElementById('form-name').value = params.name || '';
-            document.getElementById('form-category').value = params.category || '';
-            document.getElementById('form-target').value = params.target || '';
-            document.getElementById('form-date').value = params.date || '';
-            document.getElementById('form-completed').value = params.completed !== undefined ? params.completed : '';
-
-            form.submit();
-        }
-
         function toggleDailyHabit(habitName, isChecked) {
             const todayDate = document.getElementById('current-week-label').textContent;
             const statusEl = document.getElementById('sync-status');
             statusEl.textContent = "● Logging to Sheets...";
             statusEl.className = "text-amber-400 font-medium";
 
-            sendFormSync({
+            sendBackendSync({
                 action: 'logHabit',
                 name: habitName,
                 date: todayDate,
@@ -343,7 +335,7 @@
             setTimeout(() => {
                 statusEl.textContent = "● Logged to Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
-            }, 800);
+            }, 500);
         }
 
         function renderCharts() {
@@ -463,12 +455,12 @@
             // 3. Render dashboard immediately
             renderUI();
 
-            // 4. Send to Google Sheets via Hidden Form Submit
+            // 4. Send to Google Sheets via Universal Backend Sync Dispatcher
             const statusEl = document.getElementById('sync-status');
             statusEl.textContent = "● Saving to Google Sheets...";
             statusEl.className = "text-amber-400 font-medium";
 
-            sendFormSync({
+            sendBackendSync({
                 action: 'addHabit',
                 id: habitId,
                 name: name,
@@ -479,7 +471,7 @@
             setTimeout(() => {
                 statusEl.textContent = "● Saved to Google Sheets";
                 statusEl.className = "text-emerald-400 font-medium";
-            }, 800);
+            }, 500);
         }
 
         initDates();
